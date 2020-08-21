@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO;
+using System.Reflection;
 
 namespace il2cpp_sdk_generator
 {
@@ -17,8 +18,28 @@ namespace il2cpp_sdk_generator
 
             T retObj = new T();
 
-            // TODO: Type reading
+            // TODO: investigate performance of GetFields vs cache
             // TODO: Proper union reading
+            foreach (FieldInfo fieldInfo in type.GetFields())
+            {
+                Type fieldType = fieldInfo.FieldType;
+                // TODO: investigate performance of SetValue vs SetValueDirect
+                if (fieldType.IsPrimitive)
+                {
+                    fieldInfo.SetValue(retObj, reader.ReadPrimitive(fieldType));
+                }
+                else if (fieldType.IsEnum)
+                {
+                    // TODO: Support uint64 enums somehow
+                    object newEnumValue = Enum.ToObject(fieldType, reader.ReadPrimitive(typeof(System.UInt32)));
+                    fieldInfo.SetValue(retObj, newEnumValue);
+                }
+                else
+                {
+                    throw new NotSupportedException();
+                }
+            }
+            
             return retObj;
         }
 
