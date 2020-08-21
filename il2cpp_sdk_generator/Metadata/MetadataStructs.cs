@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Runtime.InteropServices;
 
+using uint8_t = System.Byte;
 using int32_t = System.Int32;
 using int16_t = System.Int16;
 using uint32_t = System.UInt32;
@@ -318,5 +319,39 @@ namespace il2cpp_sdk_generator
     {
         public Il2CppRGCTXDataType type;
         public Il2CppRGCTXDefinitionData data;
+    }
+
+    class Il2CppInterfaceOffsetPair
+    {
+        public TypeIndex interfaceTypeIndex;
+        public int32_t offset;
+    }
+
+    // 1* Is this even needed?
+    class Il2CppAssemblyNameDefinition
+    {
+        public StringIndex nameIndex;
+        public StringIndex cultureIndex;
+        public StringIndex hashValueIndex;
+        public StringIndex publicKeyIndex;
+        public uint32_t hash_alg;
+        public int32_t hash_len;
+        public uint32_t flags;
+        public int32_t major;
+        public int32_t minor;
+        public int32_t build;
+        public int32_t revision;
+        // * if so add attribute for binary reader?
+        //public uint8_t[8] public_key_token;
+    }
+
+
+    class Il2CppAssemblyDefinition
+    {
+        public ImageIndex imageIndex;
+        public uint32_t token;
+        public int32_t referencedAssemblyStart;
+        public int32_t referencedAssemblyCount;
+        public Il2CppAssemblyNameDefinition aname;
     }
 }
