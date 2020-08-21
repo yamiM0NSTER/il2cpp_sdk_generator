@@ -91,42 +91,6 @@ namespace il2cpp_sdk_generator
                     
                 }
             }
-
-            //// TODO: investigate performance of GetFields vs cache
-            //// TODO: Proper union reading (StructLayout)
-            //foreach (FieldInfo fieldInfo in type.GetFields())
-            //{
-            //    Type fieldType = fieldInfo.FieldType;
-            //    // TODO: investigate performance of SetValue vs SetValueDirect
-            //    if (fieldType.IsPrimitive)
-            //    {
-            //        fieldInfo.SetValue(retObj, reader.ReadPrimitive(fieldType));
-            //    }
-            //    else if (fieldType.IsEnum)
-            //    {
-            //        // TODO: Support uint64 enums somehow
-            //        object newEnumValue = Enum.ToObject(fieldType, reader.ReadPrimitive(typeof(System.UInt32)));
-            //        fieldInfo.SetValue(retObj, newEnumValue);
-            //    }
-            //    else
-            //    {
-            //        MethodInfo methodInfo = null;
-                    
-            //        if(!genericMethods.TryGetValue(fieldType, out methodInfo))
-            //        {
-            //            // if generic method was not generated yet, generate it
-            //            MethodInfo readMethod = typeof(BinaryReaderExtensions).GetMethod("Read");
-            //            methodInfo = readMethod.MakeGenericMethod(fieldType);
-            //            genericMethods.Add(fieldType, methodInfo);
-            //        }
-
-
-            //        fieldInfo.SetValue(retObj, methodInfo.Invoke(null, new object[] { reader }));
-
-
-            //        //throw new NotSupportedException();
-            //    }
-            //}
             
             return retObj;
         }
