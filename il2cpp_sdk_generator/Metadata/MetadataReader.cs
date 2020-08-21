@@ -9,10 +9,12 @@ namespace il2cpp_sdk_generator
     class MetadataReader
     {
         private BinaryReader reader;
+        private Stream stream;
 
         public MetadataReader(BinaryReader binaryReader)
         {
             reader = binaryReader;
+            stream = binaryReader.BaseStream;
         }
 
         public void Read()
@@ -21,6 +23,14 @@ namespace il2cpp_sdk_generator
             Il2CppGlobalMetadataHeader header = reader.Read<Il2CppGlobalMetadataHeader>();
             header.DumpToConsole();
 
+            // Offsets need position manips
+            stream.Position = header.imagesOffset;
+            // TODO: ReadArrays?
+            for(int i=0;i< header.imagesCount;i++)
+            {
+                Il2CppImageDefinition il2CppImageDefinition = reader.Read<Il2CppImageDefinition>();
+                //il2CppImageDefinition.DumpToConsole();
+            }
 
         }
     }

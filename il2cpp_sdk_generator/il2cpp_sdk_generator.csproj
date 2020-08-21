@@ -43,6 +43,7 @@
   <ItemGroup>
     <Compile Include="Extensions\BinaryReader.cs" />
     <Compile Include="Extensions\ObjectDump.cs" />
+    <Compile Include="Metadata\Metadata.cs" />
     <Compile Include="Metadata\MetadataReader.cs" />
     <Compile Include="Metadata\MetadataStructs.cs" />
     <Compile Include="Program.cs" />
