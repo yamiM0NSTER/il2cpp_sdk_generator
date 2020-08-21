@@ -14,5 +14,14 @@ namespace il2cpp_sdk_generator
         {
             reader = binaryReader;
         }
+
+        public void Read()
+        {
+            // Apparently can't read structures and have to use class?
+            Il2CppGlobalMetadataHeader header = reader.Read<Il2CppGlobalMetadataHeader>();
+            header.DumpToConsole();
+
+
+        }
     }
 }
