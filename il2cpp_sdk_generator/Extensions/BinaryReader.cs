@@ -4,12 +4,48 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace il2cpp_sdk_generator
 {
     static class BinaryReaderExtensions
     {
         private static Dictionary<Type, MethodInfo> genericMethods = new Dictionary<Type, MethodInfo>();
+        private static Dictionary<Type, FieldInfo[]> fieldCache = new Dictionary<Type, FieldInfo[]>();
+
+        public static FieldInfo[] GetFields(Type type)
+        {
+            FieldInfo[] fields;
+            if (fieldCache.TryGetValue(type, out fields))
+                return fields;
+
+            if (type.StructLayoutAttribute.Value == LayoutKind.Explicit)
+            {
+                List<FieldInfo> fieldInfos = new List<FieldInfo>();
+                Dictionary<System.Int32, System.Int32> fieldOffsets = new Dictionary<System.Int32, System.Int32>();
+                var typeFields = type.GetFields();
+                for (int i = 0; i < typeFields.Length; i++)
+                {
+                    // All fields have to contain attribute
+                    var fieldOffsetAttribute = (FieldOffsetAttribute)typeFields[i].GetCustomAttributes(typeof(FieldOffsetAttribute), false)[0];
+                    if (fieldOffsets.ContainsKey(fieldOffsetAttribute.Value))
+                        continue;
+
+                    fieldOffsets.Add(fieldOffsetAttribute.Value, typeFields[i].GetType().GetSizeOf());
+                    fieldInfos.Add(typeFields[i]);
+                }
+                fields = fieldInfos.ToArray();
+            }
+            else
+            {
+                fields = type.GetFields();
+            }
+
+            fieldCache.Add(type, fields);
+
+            return fields;
+        }
+
 
         public static T Read<T>(this BinaryReader reader) where T : new()
         {
@@ -20,48 +56,84 @@ namespace il2cpp_sdk_generator
 
             T retObj = new T();
 
-            // TODO: investigate performance of GetFields vs cache
-            // TODO: Proper union reading
-            foreach (FieldInfo fieldInfo in type.GetFields())
+            FieldInfo[] fields = GetFields(type);
+
+            for (int i=0;i<fields.Length;i++)
             {
-                Type fieldType = fieldInfo.FieldType;
+                Type fieldType = fields[i].FieldType;
                 // TODO: investigate performance of SetValue vs SetValueDirect
                 if (fieldType.IsPrimitive)
                 {
-                    fieldInfo.SetValue(retObj, reader.ReadPrimitive(fieldType));
+                    fields[i].SetValue(retObj, reader.ReadPrimitive(fieldType));
                 }
                 else if (fieldType.IsEnum)
                 {
                     // TODO: Support uint64 enums somehow
                     object newEnumValue = Enum.ToObject(fieldType, reader.ReadPrimitive(typeof(System.UInt32)));
-                    fieldInfo.SetValue(retObj, newEnumValue);
+                    fields[i].SetValue(retObj, newEnumValue);
                 }
                 else
                 {
                     MethodInfo methodInfo = null;
-                    
-                    if(!genericMethods.TryGetValue(fieldType, out methodInfo))
+
+                    if (!genericMethods.TryGetValue(fieldType, out methodInfo))
                     {
                         // if generic method was not generated yet, generate it
                         MethodInfo readMethod = typeof(BinaryReaderExtensions).GetMethod("Read");
                         methodInfo = readMethod.MakeGenericMethod(fieldType);
+
+                        var test = methodInfo.GetParameters().Length;
                         genericMethods.Add(fieldType, methodInfo);
                     }
 
 
-                    fieldInfo.SetValue(retObj, methodInfo.Invoke(null, new object[] { reader }));
-
-
-                    //throw new NotSupportedException();
+                    fields[i].SetValue(retObj, methodInfo.Invoke(null, new object[] { reader }));
+                    
                 }
             }
+
+            //// TODO: investigate performance of GetFields vs cache
+            //// TODO: Proper union reading (StructLayout)
+            //foreach (FieldInfo fieldInfo in type.GetFields())
+            //{
+            //    Type fieldType = fieldInfo.FieldType;
+            //    // TODO: investigate performance of SetValue vs SetValueDirect
+            //    if (fieldType.IsPrimitive)
+            //    {
+            //        fieldInfo.SetValue(retObj, reader.ReadPrimitive(fieldType));
+            //    }
+            //    else if (fieldType.IsEnum)
+            //    {
+            //        // TODO: Support uint64 enums somehow
+            //        object newEnumValue = Enum.ToObject(fieldType, reader.ReadPrimitive(typeof(System.UInt32)));
+            //        fieldInfo.SetValue(retObj, newEnumValue);
+            //    }
+            //    else
+            //    {
+            //        MethodInfo methodInfo = null;
+                    
+            //        if(!genericMethods.TryGetValue(fieldType, out methodInfo))
+            //        {
+            //            // if generic method was not generated yet, generate it
+            //            MethodInfo readMethod = typeof(BinaryReaderExtensions).GetMethod("Read");
+            //            methodInfo = readMethod.MakeGenericMethod(fieldType);
+            //            genericMethods.Add(fieldType, methodInfo);
+            //        }
+
+
+            //        fieldInfo.SetValue(retObj, methodInfo.Invoke(null, new object[] { reader }));
+
+
+            //        //throw new NotSupportedException();
+            //    }
+            //}
             
             return retObj;
         }
 
         public static T[] ReadArray<T>(this BinaryReader reader, int arrSize) where T : new()
         {
-            //Console.WriteLine($"arrSize: {arrSize} * {typeof(T).Name}");
+            Console.WriteLine($"arrSize: {arrSize} * {typeof(T).Name}");
             T[] retArr = new T[arrSize];
 
             for (var i = 0; i < arrSize; i++)
