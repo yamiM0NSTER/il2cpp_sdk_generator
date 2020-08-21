@@ -8,6 +8,8 @@ namespace il2cpp_sdk_generator
 {
     static class TypeExtensions
     {
+        private static Dictionary<Type, MethodInfo> genericMethods = new Dictionary<Type, MethodInfo>();
+
         // signed
         static Type int16_t = typeof(System.Int16);
         static Type int32_t = typeof(System.Int32);
@@ -58,7 +60,9 @@ namespace il2cpp_sdk_generator
                 }
                 else
                 {
-                    throw new NotSupportedException();
+                    nSize += fieldType.GetSizeOf();
+
+                    //throw new NotSupportedException();
                 }
             }
             return nSize;

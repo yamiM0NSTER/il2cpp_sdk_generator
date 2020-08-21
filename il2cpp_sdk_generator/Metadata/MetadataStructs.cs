@@ -36,6 +36,7 @@ using ImageIndex = System.Int32;
 using AssemblyIndex = System.Int32;
 using InteropDataIndex = System.Int32;
 
+using EncodedMethodIndex = System.UInt32;
 
 namespace il2cpp_sdk_generator
 {

@@ -9,6 +9,8 @@ namespace il2cpp_sdk_generator
 {
     static class BinaryReaderExtensions
     {
+        private static Dictionary<Type, MethodInfo> genericMethods = new Dictionary<Type, MethodInfo>();
+
         public static T Read<T>(this BinaryReader reader) where T : new()
         {
             Type type = typeof(T);
@@ -36,7 +38,21 @@ namespace il2cpp_sdk_generator
                 }
                 else
                 {
-                    throw new NotSupportedException();
+                    MethodInfo methodInfo = null;
+                    
+                    if(!genericMethods.TryGetValue(fieldType, out methodInfo))
+                    {
+                        // if generic method was not generated yet, generate it
+                        MethodInfo readMethod = typeof(BinaryReaderExtensions).GetMethod("Read");
+                        methodInfo = readMethod.MakeGenericMethod(fieldType);
+                        genericMethods.Add(fieldType, methodInfo);
+                    }
+
+
+                    fieldInfo.SetValue(retObj, methodInfo.Invoke(null, new object[] { reader }));
+
+
+                    //throw new NotSupportedException();
                 }
             }
             
@@ -45,7 +61,7 @@ namespace il2cpp_sdk_generator
 
         public static T[] ReadArray<T>(this BinaryReader reader, int arrSize) where T : new()
         {
-            Console.WriteLine($"arrSize: {arrSize} * {typeof(T).Name}");
+            //Console.WriteLine($"arrSize: {arrSize} * {typeof(T).Name}");
             T[] retArr = new T[arrSize];
 
             for (var i = 0; i < arrSize; i++)

@@ -3,6 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
+using int32_t = System.Int32;
+
+using TypeIndex = System.Int32;
+using TypeDefinitionIndex = System.Int32;
+using EncodedMethodIndex = System.UInt32;
+
+
 namespace il2cpp_sdk_generator
 {
     static class Metadata
@@ -21,11 +28,11 @@ namespace il2cpp_sdk_generator
         public static Il2CppParameterDefinition[] parameterDefinitions;
         public static Il2CppFieldDefinition[] fieldDefinitions;
         public static Il2CppGenericParameter[] genericParameters;
-        public static System.Int32[] genericParameterConstraintsIndices; // TypeIndex
+        public static TypeIndex[] genericParameterConstraintsIndices; // TypeIndex
         public static Il2CppGenericContainer[] genericContainers;
-        public static System.Int32[] nestedTypeIndices; // TypeDefinitionIndex
-        public static System.Int32[] interfaceIndices; // TypeIndex
-        public static System.UInt32[] vtableMethodIndices; // EncodedMethodIndex
+        public static TypeDefinitionIndex[] nestedTypeIndices; // TypeDefinitionIndex
+        public static TypeIndex[] interfaceIndices; // TypeIndex
+        public static EncodedMethodIndex[] vtableMethodIndices; // EncodedMethodIndex
         public static Il2CppInterfaceOffsetPair[] interfaceOffsetPairs;
         public static Il2CppTypeDefinition[] typeDefinitions;
         public static Il2CppRGCTXDefinition[] rgctxEntries;
@@ -34,9 +41,9 @@ namespace il2cpp_sdk_generator
         public static Il2CppMetadataUsageList[] metadataUsageLists;
         public static Il2CppMetadataUsagePair[] metadataUsagePairs;
         public static Il2CppFieldRef[] fieldReferences;
-        public static System.Int32[] referencedAssemblies; // int32_t
+        public static int32_t[] referencedAssemblies; // int32_t
         public static Il2CppCustomAttributeTypeRange[] attributeTypeRanges;
-        public static System.Int32[] attributeTypes; // TypeIndex
+        public static TypeIndex[] attributeTypes; // TypeIndex
         // unresolvedVirtualCallParameterTypes
         // unresolvedVirtualCallParameterRanges
         // windowsRuntimeTypeNames // Il2CppWindowsRuntimeTypeNamePair

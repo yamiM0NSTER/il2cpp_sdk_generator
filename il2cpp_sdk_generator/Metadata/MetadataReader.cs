@@ -4,6 +4,11 @@ using System.Linq;
 using System.Text;
 using System.IO;
 
+using int32_t = System.Int32;
+using TypeIndex = System.Int32;
+using TypeDefinitionIndex = System.Int32;
+using EncodedMethodIndex = System.UInt32;
+
 namespace il2cpp_sdk_generator
 {
     class MetadataReader
@@ -32,26 +37,53 @@ namespace il2cpp_sdk_generator
             Metadata.propertyDefinitions = reader.ReadArray<Il2CppPropertyDefinition>(Metadata.header.propertiesCount / typeof(Il2CppPropertyDefinition).GetSizeOf());
             stream.Position = Metadata.header.methodsOffset;
             Metadata.methodDefinitions = reader.ReadArray<Il2CppMethodDefinition>(Metadata.header.methodsCount / typeof(Il2CppMethodDefinition).GetSizeOf());
-            for (int i = 0; i < Metadata.header.methodsCount; i++)
-            {
-                Metadata.methodDefinitions[i].DumpToConsole();
-            }
-
-
-            return;
-            // Apparently can't read structures and have to use class?
-            Il2CppGlobalMetadataHeader header = reader.Read<Il2CppGlobalMetadataHeader>();
-            header.DumpToConsole();
-
-            // Offsets need position manips
-            stream.Position = header.imagesOffset;
-            // TODO: ReadArrays?
-            for(int i=0;i< header.imagesCount;i++)
-            {
-                Il2CppImageDefinition il2CppImageDefinition = reader.Read<Il2CppImageDefinition>();
-                //il2CppImageDefinition.DumpToConsole();
-            }
-
+            stream.Position = Metadata.header.parametersOffset;
+            Metadata.parameterDefaultValues = reader.ReadArray<Il2CppParameterDefaultValue>(Metadata.header.parametersCount / typeof(Il2CppParameterDefaultValue).GetSizeOf());
+            stream.Position = Metadata.header.fieldDefaultValuesOffset;
+            Metadata.fieldDefaultValues = reader.ReadArray<Il2CppFieldDefaultValue>(Metadata.header.fieldDefaultValuesCount / typeof(Il2CppFieldDefaultValue).GetSizeOf());
+            // fieldAndParameterDefaultValueData
+            // Il2CppFieldMarshaledSize
+            stream.Position = Metadata.header.parametersOffset;
+            Metadata.parameterDefinitions = reader.ReadArray<Il2CppParameterDefinition>(Metadata.header.parametersCount / typeof(Il2CppParameterDefinition).GetSizeOf());
+            stream.Position = Metadata.header.fieldsOffset;
+            Metadata.fieldDefinitions = reader.ReadArray<Il2CppFieldDefinition>(Metadata.header.fieldsCount / typeof(Il2CppFieldDefinition).GetSizeOf());
+            stream.Position = Metadata.header.genericParametersOffset;
+            Metadata.genericParameters = reader.ReadArray<Il2CppGenericParameter>(Metadata.header.genericParametersCount / typeof(Il2CppGenericParameter).GetSizeOf());
+            stream.Position = Metadata.header.genericParameterConstraintsOffset;
+            Metadata.genericParameterConstraintsIndices = reader.ReadArray<TypeIndex>(Metadata.header.genericParameterConstraintsCount / typeof(TypeIndex).GetSizeOf());
+            stream.Position = Metadata.header.genericContainersOffset;
+            Metadata.genericContainers = reader.ReadArray<Il2CppGenericContainer>(Metadata.header.genericContainersCount / typeof(Il2CppGenericContainer).GetSizeOf());
+            stream.Position = Metadata.header.nestedTypesOffset;
+            Metadata.nestedTypeIndices = reader.ReadArray<TypeDefinitionIndex>(Metadata.header.nestedTypesCount / typeof(TypeDefinitionIndex).GetSizeOf());
+            stream.Position = Metadata.header.interfacesOffset;
+            Metadata.interfaceIndices = reader.ReadArray<TypeIndex>(Metadata.header.interfacesCount / typeof(TypeIndex).GetSizeOf());
+            stream.Position = Metadata.header.vtableMethodsOffset;
+            Metadata.vtableMethodIndices = reader.ReadArray<EncodedMethodIndex>(Metadata.header.vtableMethodsCount / typeof(EncodedMethodIndex).GetSizeOf());
+            stream.Position = Metadata.header.interfaceOffsetsOffset;
+            Metadata.interfaceOffsetPairs = reader.ReadArray<Il2CppInterfaceOffsetPair>(Metadata.header.interfaceOffsetsCount / typeof(Il2CppInterfaceOffsetPair).GetSizeOf());
+            stream.Position = Metadata.header.typeDefinitionsOffset;
+            Metadata.typeDefinitions = reader.ReadArray<Il2CppTypeDefinition>(Metadata.header.typeDefinitionsCount / typeof(Il2CppTypeDefinition).GetSizeOf());
+            stream.Position = Metadata.header.rgctxEntriesOffset;
+            Metadata.rgctxEntries = reader.ReadArray<Il2CppRGCTXDefinition>(Metadata.header.rgctxEntriesCount / typeof(Il2CppRGCTXDefinition).GetSizeOf());
+            stream.Position = Metadata.header.imagesOffset;
+            Metadata.imageDefinitions = reader.ReadArray<Il2CppImageDefinition>(Metadata.header.imagesCount / typeof(Il2CppImageDefinition).GetSizeOf());
+            // For now skip assembly definitions, are they even needed?
+            stream.Position = Metadata.header.metadataUsageListsOffset;
+            Metadata.metadataUsageLists = reader.ReadArray<Il2CppMetadataUsageList>(Metadata.header.metadataUsageListsCount / typeof(Il2CppMetadataUsageList).GetSizeOf());
+            stream.Position = Metadata.header.metadataUsagePairsOffset;
+            Metadata.metadataUsagePairs = reader.ReadArray<Il2CppMetadataUsagePair>(Metadata.header.metadataUsagePairsCount / typeof(Il2CppMetadataUsagePair).GetSizeOf());
+            stream.Position = Metadata.header.fieldRefsOffset;
+            Metadata.fieldReferences = reader.ReadArray<Il2CppFieldRef>(Metadata.header.fieldRefsCount / typeof(Il2CppFieldRef).GetSizeOf());
+            stream.Position = Metadata.header.referencedAssembliesOffset;
+            Metadata.referencedAssemblies = reader.ReadArray<int32_t>(Metadata.header.referencedAssembliesCount / typeof(int32_t).GetSizeOf());
+            stream.Position = Metadata.header.attributesInfoOffset;
+            Metadata.attributeTypeRanges = reader.ReadArray<Il2CppCustomAttributeTypeRange>(Metadata.header.attributesInfoCount / typeof(Il2CppCustomAttributeTypeRange).GetSizeOf());
+            stream.Position = Metadata.header.attributeTypesOffset;
+            Metadata.attributeTypes = reader.ReadArray<TypeIndex>(Metadata.header.attributeTypesCount / typeof(TypeIndex).GetSizeOf());
+            // unresolvedVirtualCallParameterTypes
+            // unresolvedVirtualCallParameterRanges
+            // windowsRuntimeTypeNames // Il2CppWindowsRuntimeTypeNamePair
+            // exportedTypeDefinitions // TypeDefinitionIndex
         }
     }
 }
