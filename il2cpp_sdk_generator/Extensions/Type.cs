@@ -58,6 +58,13 @@ namespace il2cpp_sdk_generator
                     // TODO: Support uint64 enums somehow
                     nSize += 4;
                 }
+                else if(fieldType.IsArray)
+                {
+                    // Get Array size from attribute
+                    // All array fields have to contain attribute
+                    var arraySizeAttribute = (ArraySizeAttribute)fieldType.GetCustomAttributes(typeof(ArraySizeAttribute), false)[0];
+                    nSize += fieldType.GetElementType().GetSizeOf() * arraySizeAttribute.Value;
+                }
                 else
                 {
                     nSize += fieldType.GetSizeOf();

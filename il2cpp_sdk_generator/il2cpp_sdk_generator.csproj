@@ -47,6 +47,9 @@
     <Compile Include="Metadata\Metadata.cs" />
     <Compile Include="Metadata\MetadataReader.cs" />
     <Compile Include="Metadata\MetadataStructs.cs" />
+    <Compile Include="Attributes\ArraySizeAttribute.cs" />
+    <Compile Include="PortableExecutable\PortableExecutableReader.cs" />
+    <Compile Include="PortableExecutable\PortableExecutableStructs.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

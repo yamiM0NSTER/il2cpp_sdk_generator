@@ -16,6 +16,8 @@ namespace il2cpp_sdk_generator
 
         public static void DumpToConsole(this object instance)
         {
+            // TODO: Dump Arrays
+            // TODO: Support unions
             Type type = instance.GetType();
             if(type.IsPrimitive)
             {

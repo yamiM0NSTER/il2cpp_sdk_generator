@@ -13,6 +13,8 @@ namespace il2cpp_sdk_generator
         private static Dictionary<Type, MethodInfo> genericMethods = new Dictionary<Type, MethodInfo>();
         private static Dictionary<Type, FieldInfo[]> fieldCache = new Dictionary<Type, FieldInfo[]>();
 
+        // TODO: custom struct for cache 
+        // TODO: delegate for faster execution of generic methods?
         public static FieldInfo[] GetFields(Type type)
         {
             FieldInfo[] fields;
@@ -71,6 +73,26 @@ namespace il2cpp_sdk_generator
                     // TODO: Support uint64 enums somehow
                     object newEnumValue = Enum.ToObject(fieldType, reader.ReadPrimitive(typeof(System.UInt32)));
                     fields[i].SetValue(retObj, newEnumValue);
+                }
+                else if (fieldType.IsArray)
+                {
+                    // Get Array size from attribute
+                    // All array fields have to contain attribute
+                    var arraySizeAttribute = (ArraySizeAttribute)fields[i].GetCustomAttributes(typeof(ArraySizeAttribute), false)[0];
+
+                    MethodInfo methodInfo = null;
+
+                    if (!genericMethods.TryGetValue(fieldType, out methodInfo))
+                    {
+                        // if generic method was not generated yet, generate it
+                        MethodInfo readMethod = typeof(BinaryReaderExtensions).GetMethod("ReadArray");
+                        methodInfo = readMethod.MakeGenericMethod(fieldType.GetElementType());
+
+                        var test = methodInfo.GetParameters().Length;
+                        genericMethods.Add(fieldType, methodInfo);
+                    }
+
+                    fields[i].SetValue(retObj, methodInfo.Invoke(null, new object[] { reader, arraySizeAttribute.Value }));
                 }
                 else
                 {
