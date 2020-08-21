@@ -44,6 +44,7 @@ namespace il2cpp_sdk_generator
             AssemblyPath = fileDialog.FileName;
             if (Path.GetExtension(AssemblyPath) == ".exe")
             {
+                AssemblyPath = $"{Path.GetDirectoryName(AssemblyPath)}\\GameAssembly.dll";
                 string exeDir = Path.GetDirectoryName(AssemblyPath);
                 string exeName = Path.GetFileNameWithoutExtension(AssemblyPath);
                 string potentialMetadataPath = $"{exeDir}\\{exeName}_Data\\il2cpp_data\\Metadata\\global-metadata.dat";
