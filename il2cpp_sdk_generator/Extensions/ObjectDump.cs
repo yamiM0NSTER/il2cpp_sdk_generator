@@ -1,0 +1,24 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Reflection;
+
+namespace il2cpp_sdk_generator
+{
+    static class ObjectDumpExtensions
+    {
+        public static void DumpToConsole(this object instance)
+        {
+            Type type = instance.GetType();
+
+            Console.WriteLine($"{type.Name}");
+            Console.WriteLine("{");
+            foreach (FieldInfo fieldInfo in type.GetFields())
+            {
+                Console.WriteLine($" {fieldInfo.Name}: {fieldInfo.GetValue(instance).ToString()}");
+            }
+            Console.WriteLine("}");
+        }
+    }
+}
