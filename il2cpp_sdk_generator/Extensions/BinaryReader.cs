@@ -43,7 +43,18 @@ namespace il2cpp_sdk_generator
             return retObj;
         }
 
+        public static T[] ReadArray<T>(this BinaryReader reader, int arrSize) where T : new()
+        {
+            Console.WriteLine($"arrSize: {arrSize} * {typeof(T).Name}");
+            T[] retArr = new T[arrSize];
 
+            for (var i = 0; i < arrSize; i++)
+            {
+                retArr[i] = reader.Read<T>();
+            }
+
+            return retArr;
+        }
 
         // signed
         static Type int16_t = typeof(System.Int16);

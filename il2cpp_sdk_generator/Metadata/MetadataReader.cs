@@ -9,49 +9,31 @@ namespace il2cpp_sdk_generator
     class MetadataReader
     {
         private BinaryReader reader;
-        private Stream stream;
+        private MemoryStream stream;
 
-        public MetadataReader(BinaryReader binaryReader)
+        public MetadataReader(MemoryStream memoryStream)
         {
-            reader = binaryReader;
-            stream = binaryReader.BaseStream;
+            stream = memoryStream;
+            stream.Position = 0;
+            reader = new BinaryReader(memoryStream, Encoding.UTF8);
         }
 
         public void Read()
         {
             Metadata.header = reader.Read<Il2CppGlobalMetadataHeader>();
+            Metadata.header.DumpToConsole();
 
             stream.Position = Metadata.header.stringLiteralOffset;
-            Metadata.stringLiterals = new Il2CppStringLiteral[Metadata.header.stringLiteralCount];
-            for (int i = 0; i < Metadata.header.stringLiteralCount; i++)
-            {
-                Metadata.stringLiterals[i] = reader.Read<Il2CppStringLiteral>();
-                //Metadata.stringLiterals[i].DumpToConsole();
-            }
-
+            Metadata.stringLiterals = reader.ReadArray<Il2CppStringLiteral>(Metadata.header.stringLiteralCount / typeof(Il2CppStringLiteral).GetSizeOf());
             // For now skip strings
-
             stream.Position = Metadata.header.eventsOffset;
-            Metadata.eventDefinitions = new Il2CppEventDefinition[Metadata.header.eventsCount];
-            for (int i = 0; i < Metadata.header.eventsCount; i++)
-            {
-                Metadata.eventDefinitions[i] = reader.Read<Il2CppEventDefinition>();
-                //Metadata.eventDefinitions[i].DumpToConsole();
-            }
-
+            Metadata.eventDefinitions = reader.ReadArray<Il2CppEventDefinition>(Metadata.header.eventsCount / typeof(Il2CppEventDefinition).GetSizeOf());
             stream.Position = Metadata.header.propertiesOffset;
-            Metadata.propertyDefinitions = new Il2CppPropertyDefinition[Metadata.header.propertiesCount];
-            for (int i = 0; i < Metadata.header.eventsCount; i++)
-            {
-                Metadata.propertyDefinitions[i] = reader.Read<Il2CppPropertyDefinition>();
-                //Metadata.propertyDefinitions[i].DumpToConsole();
-            }
-
+            Metadata.propertyDefinitions = reader.ReadArray<Il2CppPropertyDefinition>(Metadata.header.propertiesCount / typeof(Il2CppPropertyDefinition).GetSizeOf());
             stream.Position = Metadata.header.methodsOffset;
-            Metadata.methodDefinitions = new Il2CppMethodDefinition[Metadata.header.methodsCount];
-            for (int i = 0; i < Metadata.header.eventsCount; i++)
+            Metadata.methodDefinitions = reader.ReadArray<Il2CppMethodDefinition>(Metadata.header.methodsCount / typeof(Il2CppMethodDefinition).GetSizeOf());
+            for (int i = 0; i < Metadata.header.methodsCount; i++)
             {
-                Metadata.methodDefinitions[i] = reader.Read<Il2CppMethodDefinition>();
                 Metadata.methodDefinitions[i].DumpToConsole();
             }
 

@@ -21,8 +21,9 @@ namespace il2cpp_sdk_generator
 
             // Metadata was selected
             byte[] metadataBytes = File.ReadAllBytes(fileDialog.FileName);
+            Console.WriteLine($"metadataBytes: {metadataBytes.Length}");
 
-            MetadataReader metadataReader = new MetadataReader(new BinaryReader(new MemoryStream(metadataBytes), Encoding.UTF8));
+            MetadataReader metadataReader = new MetadataReader(new MemoryStream(metadataBytes));
             metadataReader.Read();
 
 
