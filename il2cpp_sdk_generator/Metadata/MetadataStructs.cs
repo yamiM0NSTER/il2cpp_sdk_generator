@@ -40,129 +40,129 @@ namespace il2cpp_sdk_generator
 {
     class Il2CppGlobalMetadataHeader
     {
-       public int32_t sanity;
-       public int32_t version;
-       public int32_t stringLiteralOffset; // string data for managed code
-       public int32_t stringLiteralCount;
-       public int32_t stringLiteralDataOffset;
-       public int32_t stringLiteralDataCount;
-       public int32_t stringOffset; // string data for metadata
-       public int32_t stringCount;
-       public int32_t eventsOffset; // Il2CppEventDefinition
-       public int32_t eventsCount;
-       public int32_t propertiesOffset; // Il2CppPropertyDefinition
-       public int32_t propertiesCount;
-       public int32_t methodsOffset; // Il2CppMethodDefinition
-       public int32_t methodsCount;
-       public int32_t parameterDefaultValuesOffset; // Il2CppParameterDefaultValue
-       public int32_t parameterDefaultValuesCount;
-       public int32_t fieldDefaultValuesOffset; // Il2CppFieldDefaultValue
-       public int32_t fieldDefaultValuesCount;
-       public int32_t fieldAndParameterDefaultValueDataOffset; // uint8_t
-       public int32_t fieldAndParameterDefaultValueDataCount;
-       public int32_t fieldMarshaledSizesOffset; // Il2CppFieldMarshaledSize
-       public int32_t fieldMarshaledSizesCount;
-       public int32_t parametersOffset; // Il2CppParameterDefinition
-       public int32_t parametersCount;
-       public int32_t fieldsOffset; // Il2CppFieldDefinition
-       public int32_t fieldsCount;
-       public int32_t genericParametersOffset; // Il2CppGenericParameter
-       public int32_t genericParametersCount;
-       public int32_t genericParameterConstraintsOffset; // TypeIndex
-       public int32_t genericParameterConstraintsCount;
-       public int32_t genericContainersOffset; // Il2CppGenericContainer
-       public int32_t genericContainersCount;
-       public int32_t nestedTypesOffset; // TypeDefinitionIndex
-       public int32_t nestedTypesCount;
-       public int32_t interfacesOffset; // TypeIndex
-       public int32_t interfacesCount;
-       public int32_t vtableMethodsOffset; // EncodedMethodIndex
-       public int32_t vtableMethodsCount;
-       public int32_t interfaceOffsetsOffset; // Il2CppInterfaceOffsetPair
-       public int32_t interfaceOffsetsCount;
-       public int32_t typeDefinitionsOffset; // Il2CppTypeDefinition
-       public int32_t typeDefinitionsCount;
-       public int32_t rgctxEntriesOffset; // Il2CppRGCTXDefinition
-       public int32_t rgctxEntriesCount;
-       public int32_t imagesOffset; // Il2CppImageDefinition
-       public int32_t imagesCount;
-       public int32_t assembliesOffset; // Il2CppAssemblyDefinition
-       public int32_t assembliesCount;
-       public int32_t metadataUsageListsOffset; // Il2CppMetadataUsageList
-       public int32_t metadataUsageListsCount;
-       public int32_t metadataUsagePairsOffset; // Il2CppMetadataUsagePair
-       public int32_t metadataUsagePairsCount;
-       public int32_t fieldRefsOffset; // Il2CppFieldRef
-       public int32_t fieldRefsCount;
-       public int32_t referencedAssembliesOffset; // int32_t
-       public int32_t referencedAssembliesCount;
-       public int32_t attributesInfoOffset; // Il2CppCustomAttributeTypeRange
-       public int32_t attributesInfoCount;
-       public int32_t attributeTypesOffset; // TypeIndex
-       public int32_t attributeTypesCount;
-       public int32_t unresolvedVirtualCallParameterTypesOffset; // TypeIndex
-       public int32_t unresolvedVirtualCallParameterTypesCount;
-       public int32_t unresolvedVirtualCallParameterRangesOffset; // Il2CppRange
-       public int32_t unresolvedVirtualCallParameterRangesCount;
-       public int32_t windowsRuntimeTypeNamesOffset; // Il2CppWindowsRuntimeTypeNamePair
-       public int32_t windowsRuntimeTypeNamesSize;
-       public int32_t exportedTypeDefinitionsOffset; // TypeDefinitionIndex
-       public int32_t exportedTypeDefinitionsCount;
+        public int32_t sanity;
+        public int32_t version;
+        public int32_t stringLiteralOffset; // string data for managed code
+        public int32_t stringLiteralCount;
+        public int32_t stringLiteralDataOffset;
+        public int32_t stringLiteralDataCount;
+        public int32_t stringOffset; // string data for metadata
+        public int32_t stringCount;
+        public int32_t eventsOffset; // Il2CppEventDefinition
+        public int32_t eventsCount;
+        public int32_t propertiesOffset; // Il2CppPropertyDefinition
+        public int32_t propertiesCount;
+        public int32_t methodsOffset; // Il2CppMethodDefinition
+        public int32_t methodsCount;
+        public int32_t parameterDefaultValuesOffset; // Il2CppParameterDefaultValue
+        public int32_t parameterDefaultValuesCount;
+        public int32_t fieldDefaultValuesOffset; // Il2CppFieldDefaultValue
+        public int32_t fieldDefaultValuesCount;
+        public int32_t fieldAndParameterDefaultValueDataOffset; // uint8_t
+        public int32_t fieldAndParameterDefaultValueDataCount;
+        public int32_t fieldMarshaledSizesOffset; // Il2CppFieldMarshaledSize
+        public int32_t fieldMarshaledSizesCount;
+        public int32_t parametersOffset; // Il2CppParameterDefinition
+        public int32_t parametersCount;
+        public int32_t fieldsOffset; // Il2CppFieldDefinition
+        public int32_t fieldsCount;
+        public int32_t genericParametersOffset; // Il2CppGenericParameter
+        public int32_t genericParametersCount;
+        public int32_t genericParameterConstraintsOffset; // TypeIndex
+        public int32_t genericParameterConstraintsCount;
+        public int32_t genericContainersOffset; // Il2CppGenericContainer
+        public int32_t genericContainersCount;
+        public int32_t nestedTypesOffset; // TypeDefinitionIndex
+        public int32_t nestedTypesCount;
+        public int32_t interfacesOffset; // TypeIndex
+        public int32_t interfacesCount;
+        public int32_t vtableMethodsOffset; // EncodedMethodIndex
+        public int32_t vtableMethodsCount;
+        public int32_t interfaceOffsetsOffset; // Il2CppInterfaceOffsetPair
+        public int32_t interfaceOffsetsCount;
+        public int32_t typeDefinitionsOffset; // Il2CppTypeDefinition
+        public int32_t typeDefinitionsCount;
+        public int32_t rgctxEntriesOffset; // Il2CppRGCTXDefinition
+        public int32_t rgctxEntriesCount;
+        public int32_t imagesOffset; // Il2CppImageDefinition
+        public int32_t imagesCount;
+        public int32_t assembliesOffset; // Il2CppAssemblyDefinition
+        public int32_t assembliesCount;
+        public int32_t metadataUsageListsOffset; // Il2CppMetadataUsageList
+        public int32_t metadataUsageListsCount;
+        public int32_t metadataUsagePairsOffset; // Il2CppMetadataUsagePair
+        public int32_t metadataUsagePairsCount;
+        public int32_t fieldRefsOffset; // Il2CppFieldRef
+        public int32_t fieldRefsCount;
+        public int32_t referencedAssembliesOffset; // int32_t
+        public int32_t referencedAssembliesCount;
+        public int32_t attributesInfoOffset; // Il2CppCustomAttributeTypeRange
+        public int32_t attributesInfoCount;
+        public int32_t attributeTypesOffset; // TypeIndex
+        public int32_t attributeTypesCount;
+        public int32_t unresolvedVirtualCallParameterTypesOffset; // TypeIndex
+        public int32_t unresolvedVirtualCallParameterTypesCount;
+        public int32_t unresolvedVirtualCallParameterRangesOffset; // Il2CppRange
+        public int32_t unresolvedVirtualCallParameterRangesCount;
+        public int32_t windowsRuntimeTypeNamesOffset; // Il2CppWindowsRuntimeTypeNamePair
+        public int32_t windowsRuntimeTypeNamesSize;
+        public int32_t exportedTypeDefinitionsOffset; // TypeDefinitionIndex
+        public int32_t exportedTypeDefinitionsCount;
     }
 
-    struct Il2CppImageDefinition
+    class Il2CppImageDefinition
     {
-        StringIndex nameIndex;
-        AssemblyIndex assemblyIndex;
+        public StringIndex nameIndex;
+        public AssemblyIndex assemblyIndex;
 
-        TypeDefinitionIndex typeStart;
-        uint32_t typeCount;
+        public TypeDefinitionIndex typeStart;
+        public uint32_t typeCount;
 
-        TypeDefinitionIndex exportedTypeStart;
-        uint32_t exportedTypeCount;
+        public TypeDefinitionIndex exportedTypeStart;
+        public uint32_t exportedTypeCount;
 
-        MethodIndex entryPointIndex;
-        uint32_t token;
+        public MethodIndex entryPointIndex;
+        public uint32_t token;
 
-        CustomAttributeIndex customAttributeStart;
-        uint32_t customAttributeCount;
+        public CustomAttributeIndex customAttributeStart;
+        public uint32_t customAttributeCount;
     }
 
-    struct Il2CppTypeDefinition
+    class Il2CppTypeDefinition
     {
-        StringIndex nameIndex;
-        StringIndex namespaceIndex;
-        TypeIndex byvalTypeIndex;
-        TypeIndex byrefTypeIndex;
+        public StringIndex nameIndex;
+        public StringIndex namespaceIndex;
+        public TypeIndex byvalTypeIndex;
+        public TypeIndex byrefTypeIndex;
 
-        TypeIndex declaringTypeIndex;
-        TypeIndex parentIndex;
-        TypeIndex elementTypeIndex; // we can probably remove this one. Only used for enums
+        public TypeIndex declaringTypeIndex;
+        public TypeIndex parentIndex;
+        public TypeIndex elementTypeIndex; // we can probably remove this one. Only used for enums
 
-        RGCTXIndex rgctxStartIndex;
-       public int32_t rgctxCount;
+        public RGCTXIndex rgctxStartIndex;
+        public int32_t rgctxCount;
 
-        GenericContainerIndex genericContainerIndex;
+        public GenericContainerIndex genericContainerIndex;
 
-        uint32_t flags;
+        public uint32_t flags;
 
-        FieldIndex fieldStart;
-        MethodIndex methodStart;
-        EventIndex eventStart;
-        PropertyIndex propertyStart;
-        NestedTypeIndex nestedTypesStart;
-        InterfacesIndex interfacesStart;
-        VTableIndex vtableStart;
-        InterfacesIndex interfaceOffsetsStart;
+        public FieldIndex fieldStart;
+        public MethodIndex methodStart;
+        public EventIndex eventStart;
+        public PropertyIndex propertyStart;
+        public NestedTypeIndex nestedTypesStart;
+        public InterfacesIndex interfacesStart;
+        public VTableIndex vtableStart;
+        public InterfacesIndex interfaceOffsetsStart;
 
-        uint16_t method_count;
-        uint16_t property_count;
-        uint16_t field_count;
-        uint16_t event_count;
-        uint16_t nested_type_count;
-        uint16_t vtable_count;
-        uint16_t interfaces_count;
-        uint16_t interface_offsets_count;
+        public uint16_t method_count;
+        public uint16_t property_count;
+        public uint16_t field_count;
+        public uint16_t event_count;
+        public uint16_t nested_type_count;
+        public uint16_t vtable_count;
+        public uint16_t interfaces_count;
+        public uint16_t interface_offsets_count;
 
         // bitfield to portably encode boolean values as single bits
         // 01 - valuetype;
@@ -172,137 +172,137 @@ namespace il2cpp_sdk_generator
         // 05 - is_blittable;
         // 06 - is_import_or_windows_runtime;
         // 07-10 - One of nine possible PackingSize values (0, 1, 2, 4, 8, 16, 32, 64, or 128)
-        uint32_t bitfield;
-        uint32_t token;
+        public uint32_t bitfield;
+        public uint32_t token;
     }
 
-    struct Il2CppMethodDefinition
+    class Il2CppMethodDefinition
     {
-        StringIndex nameIndex;
-        TypeDefinitionIndex declaringType;
-        TypeIndex returnType;
-        ParameterIndex parameterStart;
-        GenericContainerIndex genericContainerIndex;
-        MethodIndex methodIndex;
-        MethodIndex invokerIndex;
-        MethodIndex reversePInvokeWrapperIndex;
-        RGCTXIndex rgctxStartIndex;
-       public int32_t rgctxCount;
-        uint32_t token;
-        uint16_t flags;
-        uint16_t iflags;
-        uint16_t slot;
-        uint16_t parameterCount;
+        public StringIndex nameIndex;
+        public TypeDefinitionIndex declaringType;
+        public TypeIndex returnType;
+        public ParameterIndex parameterStart;
+        public GenericContainerIndex genericContainerIndex;
+        public MethodIndex methodIndex;
+        public MethodIndex invokerIndex;
+        public MethodIndex reversePInvokeWrapperIndex;
+        public RGCTXIndex rgctxStartIndex;
+        public int32_t rgctxCount;
+        public uint32_t token;
+        public uint16_t flags;
+        public uint16_t iflags;
+        public uint16_t slot;
+        public uint16_t parameterCount;
     }
 
-    struct Il2CppEventDefinition
+    class Il2CppEventDefinition
     {
-        StringIndex nameIndex;
-        TypeIndex typeIndex;
-        MethodIndex add;
-        MethodIndex remove;
-        MethodIndex raise;
-        uint32_t token;
+        public StringIndex nameIndex;
+        public TypeIndex typeIndex;
+        public MethodIndex add;
+        public MethodIndex remove;
+        public MethodIndex raise;
+        public uint32_t token;
     }
 
-    struct Il2CppFieldRef
+    class Il2CppFieldRef
     {
-        TypeIndex typeIndex;
-        FieldIndex fieldIndex; // local offset into type fields
+        public TypeIndex typeIndex;
+        public FieldIndex fieldIndex; // local offset into type fields
     }
 
-    struct Il2CppParameterDefinition
+    class Il2CppParameterDefinition
     {
-        StringIndex nameIndex;
-        uint32_t token;
-        TypeIndex typeIndex;
+        public StringIndex nameIndex;
+        public uint32_t token;
+        public TypeIndex typeIndex;
     }
 
-    struct Il2CppParameterDefaultValue
+    class Il2CppParameterDefaultValue
     {
-        ParameterIndex parameterIndex;
-        TypeIndex typeIndex;
-        DefaultValueDataIndex dataIndex;
+        public ParameterIndex parameterIndex;
+        public TypeIndex typeIndex;
+        public DefaultValueDataIndex dataIndex;
     }
 
-    struct Il2CppFieldDefinition
+    class Il2CppFieldDefinition
     {
-        StringIndex nameIndex;
-        TypeIndex typeIndex;
-        uint32_t token;
+        public StringIndex nameIndex;
+        public TypeIndex typeIndex;
+        public uint32_t token;
     }
 
-    struct Il2CppFieldDefaultValue
+    class Il2CppFieldDefaultValue
     {
-        FieldIndex fieldIndex;
-        TypeIndex typeIndex;
-        DefaultValueDataIndex dataIndex;
+        public FieldIndex fieldIndex;
+        public TypeIndex typeIndex;
+        public DefaultValueDataIndex dataIndex;
     }
 
-    struct Il2CppPropertyDefinition
+    class Il2CppPropertyDefinition
     {
-        StringIndex nameIndex;
-        MethodIndex get;
-        MethodIndex set;
-        uint32_t attrs;
-        uint32_t token;
+        public StringIndex nameIndex;
+        public MethodIndex get;
+        public MethodIndex set;
+        public uint32_t attrs;
+        public uint32_t token;
     }
 
-    struct Il2CppMetadataUsageList
+    class Il2CppMetadataUsageList
     {
-        uint32_t start;
-        uint32_t count;
+        public uint32_t start;
+        public uint32_t count;
     }
 
-    struct Il2CppMetadataUsagePair
+    class Il2CppMetadataUsagePair
     {
-        uint32_t destinationIndex;
-        uint32_t encodedSourceIndex;
+        public uint32_t destinationIndex;
+        public uint32_t encodedSourceIndex;
     }
 
-    struct Il2CppCustomAttributeTypeRange
+    class Il2CppCustomAttributeTypeRange
     {
-        uint32_t token;
-       public int32_t start;
-       public int32_t count;
+        public uint32_t token;
+        public int32_t start;
+        public int32_t count;
     }
 
-    struct Il2CppStringLiteral
+    class Il2CppStringLiteral
     {
-        uint32_t length;
-        StringLiteralIndex dataIndex;
+        public uint32_t length;
+        public StringLiteralIndex dataIndex;
     }
 
-    struct Il2CppGenericParameter
+    class Il2CppGenericParameter
     {
-        GenericContainerIndex ownerIndex;  /* Type or method this parameter was defined in. */
-        StringIndex nameIndex;
-        GenericParameterConstraintIndex constraintsStart;
-        int16_t constraintsCount;
-        uint16_t num;
-        uint16_t flags;
+        public GenericContainerIndex ownerIndex;  /* Type or method this parameter was defined in. */
+        public StringIndex nameIndex;
+        public GenericParameterConstraintIndex constraintsStart;
+        public int16_t constraintsCount;
+        public uint16_t num;
+        public uint16_t flags;
     }
 
-    struct Il2CppGenericContainer
+    class Il2CppGenericContainer
     {
         /* index of the generic type definition or the generic method definition corresponding to this container */
-       public int32_t ownerIndex; // either index into Il2CppClass metadata array or Il2CppMethodDefinition array
-       public int32_t type_argc;
+        public int32_t ownerIndex; // either index into Il2CppClass metadata array or Il2CppMethodDefinition array
+        public int32_t type_argc;
         /* If true, we're a generic method, otherwise a generic type definition. */
-       public int32_t is_method;
+        public int32_t is_method;
         /* Our type parameters. */
-        GenericParameterIndex genericParameterStart;
+        public GenericParameterIndex genericParameterStart;
     }
 
     [StructLayout(LayoutKind.Explicit)]
-    struct Il2CppRGCTXDefinitionData
+    class Il2CppRGCTXDefinitionData
     {
         [FieldOffset(0)]
-       public int32_t rgctxDataDummy;
+        public int32_t rgctxDataDummy;
         [FieldOffset(0)]
-        MethodIndex methodIndex;
+        public MethodIndex methodIndex;
         [FieldOffset(0)]
-        TypeIndex typeIndex;
+        public TypeIndex typeIndex;
     }
 
     enum Il2CppRGCTXDataType
@@ -314,9 +314,9 @@ namespace il2cpp_sdk_generator
         IL2CPP_RGCTX_DATA_ARRAY,
     }
 
-    struct Il2CppRGCTXDefinition
+    class Il2CppRGCTXDefinition
     {
-        Il2CppRGCTXDataType type;
-        Il2CppRGCTXDefinitionData data;
+        public Il2CppRGCTXDataType type;
+        public Il2CppRGCTXDefinitionData data;
     }
 }
