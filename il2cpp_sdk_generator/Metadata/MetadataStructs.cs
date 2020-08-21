@@ -327,8 +327,7 @@ namespace il2cpp_sdk_generator
         public TypeIndex interfaceTypeIndex;
         public int32_t offset;
     }
-
-    // 1* Is this even needed?
+    
     class Il2CppAssemblyNameDefinition
     {
         public StringIndex nameIndex;
@@ -342,8 +341,8 @@ namespace il2cpp_sdk_generator
         public int32_t minor;
         public int32_t build;
         public int32_t revision;
-        // * if so add attribute for binary reader?
-        //public uint8_t[8] public_key_token;
+        [ArraySize(Metadata_Constants.PUBLIC_KEY_BYTE_LENGTH)]
+        public uint8_t[] public_key_token;
     }
 
 
@@ -354,5 +353,10 @@ namespace il2cpp_sdk_generator
         public int32_t referencedAssemblyStart;
         public int32_t referencedAssemblyCount;
         public Il2CppAssemblyNameDefinition aname;
+    }
+
+    static class Metadata_Constants
+    {
+        public const int32_t PUBLIC_KEY_BYTE_LENGTH = 8;
     }
 }

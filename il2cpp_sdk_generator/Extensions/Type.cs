@@ -62,7 +62,7 @@ namespace il2cpp_sdk_generator
                 {
                     // Get Array size from attribute
                     // All array fields have to contain attribute
-                    var arraySizeAttribute = (ArraySizeAttribute)fieldType.GetCustomAttributes(typeof(ArraySizeAttribute), false)[0];
+                    var arraySizeAttribute = (ArraySizeAttribute)fieldInfo.GetCustomAttributes(typeof(ArraySizeAttribute), false)[0];
                     nSize += fieldType.GetElementType().GetSizeOf() * arraySizeAttribute.Value;
                 }
                 else

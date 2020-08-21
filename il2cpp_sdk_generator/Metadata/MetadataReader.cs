@@ -67,7 +67,8 @@ namespace il2cpp_sdk_generator
             Metadata.rgctxEntries = reader.ReadArray<Il2CppRGCTXDefinition>(Metadata.header.rgctxEntriesCount / typeof(Il2CppRGCTXDefinition).GetSizeOf());
             stream.Position = Metadata.header.imagesOffset;
             Metadata.imageDefinitions = reader.ReadArray<Il2CppImageDefinition>(Metadata.header.imagesCount / typeof(Il2CppImageDefinition).GetSizeOf());
-            // For now skip assembly definitions, are they even needed?
+            stream.Position = Metadata.header.assembliesOffset;
+            Metadata.assemblies = reader.ReadArray<Il2CppAssemblyDefinition>(Metadata.header.assembliesCount / typeof(Il2CppAssemblyDefinition).GetSizeOf());
             stream.Position = Metadata.header.metadataUsageListsOffset;
             Metadata.metadataUsageLists = reader.ReadArray<Il2CppMetadataUsageList>(Metadata.header.metadataUsageListsCount / typeof(Il2CppMetadataUsageList).GetSizeOf());
             stream.Position = Metadata.header.metadataUsagePairsOffset;
