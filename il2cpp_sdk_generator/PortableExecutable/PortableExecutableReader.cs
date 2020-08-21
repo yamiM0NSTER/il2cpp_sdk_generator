@@ -45,10 +45,6 @@ namespace il2cpp_sdk_generator
                 Console.WriteLine($"IMAGE_FILE_HEADER Machine is x64 which is correct!");
                 IMAGE_OPTIONAL_HEADER64 imageOptionalHeader64 = reader.Read<IMAGE_OPTIONAL_HEADER64>();
                 imageOptionalHeader64.DumpToConsole();
-                foreach(var dataDirectory in imageOptionalHeader64.DataDirectory)
-                {
-                    dataDirectory.DumpToConsole();
-                }
             }
 
             IMAGE_SECTION_HEADER[] imagegSectionHeaders = reader.ReadArray<IMAGE_SECTION_HEADER>(imageFileHeader.NumberOfSections);

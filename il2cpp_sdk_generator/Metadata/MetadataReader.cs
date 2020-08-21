@@ -37,6 +37,11 @@ namespace il2cpp_sdk_generator
             Metadata.propertyDefinitions = reader.ReadArray<Il2CppPropertyDefinition>(Metadata.header.propertiesCount / typeof(Il2CppPropertyDefinition).GetSizeOf());
             stream.Position = Metadata.header.methodsOffset;
             Metadata.methodDefinitions = reader.ReadArray<Il2CppMethodDefinition>(Metadata.header.methodsCount / typeof(Il2CppMethodDefinition).GetSizeOf());
+            //foreach(var methodDef in Metadata.methodDefinitions)
+            //{
+            //    if (methodDef.methodIndex < 0)
+            //        methodDef.DumpToConsole();
+            //}
             stream.Position = Metadata.header.parametersOffset;
             Metadata.parameterDefaultValues = reader.ReadArray<Il2CppParameterDefaultValue>(Metadata.header.parametersCount / typeof(Il2CppParameterDefaultValue).GetSizeOf());
             stream.Position = Metadata.header.fieldDefaultValuesOffset;
