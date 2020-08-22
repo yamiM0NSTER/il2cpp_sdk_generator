@@ -40,6 +40,10 @@ namespace il2cpp_sdk_generator
                 {
                     Console.WriteLine($"{Indent(indent + 2)}{fieldInfo.Name}: {fieldInfo.GetValue(instance).ToString()}");
                 }
+                else if (fieldType == typeof(string))
+                {
+                    Console.WriteLine($"{Indent(indent + 2)}{fieldInfo.Name}: {fieldInfo.GetValue(instance).ToString()}");
+                }
                 else if (fieldType.IsArray)
                 {
                     Console.WriteLine($"{Indent(indent + 2)}{fieldInfo.Name}:");

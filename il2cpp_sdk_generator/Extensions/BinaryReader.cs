@@ -68,6 +68,10 @@ namespace il2cpp_sdk_generator
                 {
                     fields[i].SetValue(retObj, reader.ReadPrimitive(fieldType));
                 }
+                else if(fieldType == typeof(string))
+                {
+                    fields[i].SetValue(retObj, reader.ReadNullTerminatedString());
+                }
                 else if (fieldType.IsEnum)
                 {
                     // TODO: Support uint64 enums somehow
@@ -128,6 +132,15 @@ namespace il2cpp_sdk_generator
             }
 
             return retArr;
+        }
+
+        public static string ReadNullTerminatedString(this BinaryReader reader)
+        {
+            ArrayBuilder arrayBuilder = new ArrayBuilder();
+            byte uc;
+            while ((uc = reader.ReadByte()) > 0)
+                arrayBuilder.Append(uc);
+            return System.Text.Encoding.UTF8.GetString(arrayBuilder.ToArray());
         }
 
         // signed

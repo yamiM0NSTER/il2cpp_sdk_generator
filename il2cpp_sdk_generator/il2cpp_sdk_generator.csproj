@@ -48,10 +48,12 @@
     <Compile Include="Metadata\MetadataReader.cs" />
     <Compile Include="Metadata\MetadataStructs.cs" />
     <Compile Include="Attributes\ArraySizeAttribute.cs" />
+    <Compile Include="PortableExecutable\PortableExecutable.cs" />
     <Compile Include="PortableExecutable\PortableExecutableReader.cs" />
     <Compile Include="PortableExecutable\PortableExecutableStructs.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Utils\ArrayBuilder.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

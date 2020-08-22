@@ -207,6 +207,7 @@ namespace il2cpp_sdk_generator
         /// </summary>
         public DWORD SizeOfUninitializedData;
         /// <summary>
+        /// <para>RVA</para>
         /// A pointer to the entry point function, relative to the image base address. For executable files, this is the starting address. For device drivers, this is the address of the initialization function. The entry point function is optional for DLLs. When no entry point is present, this member is zero.
         /// </summary>
         public DWORD AddressOfEntryPoint;
@@ -318,7 +319,7 @@ namespace il2cpp_sdk_generator
         /// <summary>
         /// The relative virtual address of the table.
         /// </summary>
-        public ULONG VirtualAddress;
+        public ULONG RelativeVirtualAddress;
         /// <summary>
         /// The size of the table, in bytes.
         /// </summary>
@@ -386,6 +387,159 @@ namespace il2cpp_sdk_generator
         public DWORD Characteristics;
     }
 
+
+    /// <summary>
+    /// The .pdata section contains an array of function table entries that are used for exception handling.
+    /// <para>It is pointed to by the exception table entry in the image data directory.</para> 
+    /// <para>The entries must be sorted according to the function addresses (the first field in each structure) before being emitted into the final image.</para> 
+    /// <para>The target platform determines which of the three function table entry format variations described below is used.</para> 
+    /// <para>Function table entries for x64:</para> 
+    /// </summary>
+    [StructLayout(LayoutKind.Explicit)]
+    class IMAGE_RUNTIME_FUNCTION_ENTRY
+    {
+        /// <summary>
+        /// The RVA of the corresponding function.
+        /// </summary>
+        [FieldOffset(0)]
+        public DWORD BeginAddress;
+        /// <summary>
+        /// The RVA of the end of the function. 
+        /// </summary>
+        [FieldOffset(4)]
+        public DWORD EndAddress;
+        /// <summary>
+        /// The RVA of the unwind information. 
+        /// </summary>
+        [FieldOffset(8)]
+        public DWORD UnwindInfoAddress;
+        /// <summary>
+        /// The RVA of the unwind information. 
+        /// </summary>
+        [FieldOffset(8)]
+        public DWORD UnwindData;
+    }
+
+    class EXPORT_DIRECTORY_TABLE
+    {
+        /// <summary>
+        /// Reserved, must be 0. 
+        /// </summary>
+        public DWORD ExportFlags;
+        /// <summary>
+        /// The time and date that the export data was created. 
+        /// </summary>
+        public DWORD TimeStamp;
+        /// <summary>
+        /// The major version number. The major and minor version numbers can be set by the user. 
+        /// </summary>
+        public USHORT MajorVersion;
+        /// <summary>
+        /// The minor version number. 
+        /// </summary>
+        public USHORT MinorVersion;
+        /// <summary>
+        /// The address of the ASCII string that contains the name of the DLL. This address is relative to the image base. 
+        /// <para>NULL terminated.</para>
+        /// </summary>
+        public DWORD NameRVA;
+        /// <summary>
+        /// The starting ordinal number for exports in this image.This field specifies the starting ordinal number for the export address table.It is usually set to 1. 
+        /// </summary>
+        public DWORD OrdinalBase;
+        /// <summary>
+        /// The number of entries in the export address table. 
+        /// </summary>
+        public DWORD AddressTableEntries;
+        /// <summary>
+        /// The number of entries in the name pointer table. This is also the number of entries in the ordinal table. 
+        /// </summary>
+        public DWORD NumberofNamePointers;
+        /// <summary>
+        /// The address of the export address table, relative to the image base. 
+        /// </summary>
+        public DWORD ExportAddressTableRVA;
+        /// <summary>
+        /// The address of the export name pointer table, relative to the image base. The table size is given by the Number of Name Pointers field. 
+        /// </summary>
+        public DWORD NamePointerRVA;
+        /// <summary>
+        /// The address of the ordinal table, relative to the image base. 
+        /// </summary>
+        public DWORD OrdinalTableRVA;
+    }
+
+    /// <summary>
+    /// The export address table contains the address of exported entry points and exported data and absolutes. An ordinal number is used as an index into the export address table.
+    /// <para>Each entry in the export address table is a field that uses one of two formats in the following table.If the address specified is not within the export section(as defined by the address and length that are indicated in the optional header), the field is an export RVA, which is an actual address in code or data.Otherwise, the field is a forwarder RVA, which names a symbol in another DLL.</para>
+    /// </summary>
+    [StructLayout(LayoutKind.Explicit)]
+    class EXPORT_ADDRESS_TABLE_ENTRY
+    {
+        /// <summary>
+        /// The address of the exported symbol when loaded into memory, relative to the image base. For example, the address of an exported function. 
+        /// </summary>
+        [FieldOffset(0)]
+        public DWORD ExportRVA;
+        /// <summary>
+        /// The pointer to a null-terminated ASCII string in the export section. This string must be within the range that is given by the export table data directory entry. See Optional Header Data Directories (Image Only). This string gives the DLL name and the name of the export (for example, "MYDLL.expfunc") or the DLL name and the ordinal number of the export (for example, "MYDLL.#27"). 
+        /// </summary>
+        [FieldOffset(0)]
+        public DWORD ForwarderRVA;
+    }
+
+    class EXPORT_NAME_TABLE_ENTRY
+    {
+        public DWORD NameRVA;
+    }
+
+    class IMPORT_DIRECTORY_TABLE_ENTRY
+    {
+        public DWORD ImportLookupTableRVA;
+        public DWORD TimeStamp;
+        public DWORD ForwarderChain;
+        public DWORD NameRVA;
+        public DWORD ImportAddressTableRVA;
+    }
+
+    class IMPORT_LOOKUP_TABLE_ENTRY
+    {
+        public ULONGLONG Ordinal_NameFlag;
+
+        public bool ImportByOrdinal
+        {
+            get
+            {
+                if ((Ordinal_NameFlag & 0x8000000000000000) != 0)
+                    return true;
+                return false;
+            }
+        }
+
+        public USHORT OrdinalNumber
+        {
+            get
+            {
+                return (USHORT)(Ordinal_NameFlag & 0b1111_1111_1111_1111);
+            }
+        }
+
+        public DWORD Hint_NameTableRVA
+        {
+            get
+            {
+                return (DWORD)(Ordinal_NameFlag & 0b0111_1111_1111_1111_1111_1111_1111_1111);
+            }
+        }
+    }
+
+    class HINT_NAME_TABLE_ENTRY
+    {
+        public USHORT Hint;
+        public string Name;
+    }
+
+
     static class PE_Constants
     {
         public const USHORT IMAGE_DOS_SIGNATURE    = 0x5A4D; // MZ
@@ -394,6 +548,23 @@ namespace il2cpp_sdk_generator
         public const LONG   IMAGE_NT_SIGNATURE     = 0x00004550; // PE00
 
         public const USHORT IMAGE_NUMBEROF_DIRECTORY_ENTRIES = 16;
+        // Data Directories
+        public const USHORT IMAGE_DIRECTORY_ENTRY_EXPORT         = 0;  // Export Directory
+        public const USHORT IMAGE_DIRECTORY_ENTRY_IMPORT         = 1;  // Import Directory
+        public const USHORT IMAGE_DIRECTORY_ENTRY_RESOURCE       = 2;  // Resource Directory
+        public const USHORT IMAGE_DIRECTORY_ENTRY_EXCEPTION      = 3;  // Exception Directory
+        public const USHORT IMAGE_DIRECTORY_ENTRY_SECURITY       = 4;  // Security Directory
+        public const USHORT IMAGE_DIRECTORY_ENTRY_BASERELOC      = 5;  // Base Relocation Table
+        public const USHORT IMAGE_DIRECTORY_ENTRY_DEBUG          = 6;  // Debug Directory
+                //      IMAGE_DIRECTORY_ENTRY_COPYRIGHT      = 7  ; // (X86 usage)
+        public const USHORT IMAGE_DIRECTORY_ENTRY_ARCHITECTURE   = 7;  // Architecture Specific Data
+        public const USHORT IMAGE_DIRECTORY_ENTRY_GLOBALPTR      = 8;  // RVA of GP
+        public const USHORT IMAGE_DIRECTORY_ENTRY_TLS            = 9;  // TLS Directory
+        public const USHORT IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG    = 10; // Load Configuration Directory
+        public const USHORT IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT   = 11; // Bound Import Directory in headers
+        public const USHORT IMAGE_DIRECTORY_ENTRY_IAT            = 12; // Import Address Table
+        public const USHORT IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT   = 13; // Delay Load Import Descriptors
+        public const USHORT IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR = 14; // COM Runtime descriptor
 
 
         // Machine types

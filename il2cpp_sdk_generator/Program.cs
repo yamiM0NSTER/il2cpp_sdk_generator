@@ -24,7 +24,7 @@ namespace il2cpp_sdk_generator
             Console.WriteLine($"metadataBytes: {metadataBytes.Length}");
 
             MetadataReader metadataReader = new MetadataReader(new MemoryStream(metadataBytes));
-            metadataReader.Read();
+            //metadataReader.Read();
 
             // Select & Read GameAssembly.dll
             byte[] peBytes = File.ReadAllBytes(AssemblyPath);
