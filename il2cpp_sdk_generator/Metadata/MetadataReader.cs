@@ -93,5 +93,10 @@ namespace il2cpp_sdk_generator
             // windowsRuntimeTypeNames // Il2CppWindowsRuntimeTypeNamePair
             // exportedTypeDefinitions // TypeDefinitionIndex
         }
+
+        public void Process()
+        {
+
+        }
     }
 }

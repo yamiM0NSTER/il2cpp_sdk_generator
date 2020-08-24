@@ -14,6 +14,7 @@ namespace il2cpp_sdk_generator
 {
     static class Metadata
     {
+        // Direct File data
         public static Il2CppGlobalMetadataHeader header;
         public static Il2CppStringLiteral[] stringLiterals;
         // string data for metadata
@@ -48,5 +49,7 @@ namespace il2cpp_sdk_generator
         // unresolvedVirtualCallParameterRanges
         // windowsRuntimeTypeNames // Il2CppWindowsRuntimeTypeNamePair
         // exportedTypeDefinitions // TypeDefinitionIndex
+
+        // Processed data
     }
 }

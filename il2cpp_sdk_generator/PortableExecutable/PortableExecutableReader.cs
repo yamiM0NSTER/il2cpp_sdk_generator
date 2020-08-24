@@ -87,33 +87,28 @@ namespace il2cpp_sdk_generator
                 Console.WriteLine($"MetadataRegistrationAddress: 0x{MetadataRegistrationAddress:X}");
                 Console.WriteLine($"CodeRegistrationAddress: 0x{CodeRegistrationAddress:X}");
             }
-
-            ulong CodeRegistration1 = FindCodeRegistration();
-            Console.WriteLine($"CodeRegistration1: 0x{CodeRegistration1:X8}");
-
-            ulong MetadataRegistration = FindMetadataRegistration();
-            Console.WriteLine($"MetadataRegistration: 0x{MetadataRegistration:X8}");
-
-            stream.Position = (long)OffsetFromVA(MetadataRegistration);
-            for (int i=0;i<8;i++)
+            else if(FindRegistrationbyStructs(ref CodeRegistrationAddress, ref MetadataRegistrationAddress))
             {
-                Console.WriteLine($"Count: {reader.ReadInt64()}");
-                Console.WriteLine($"Addr: 0x{reader.ReadUInt64():X8}");
+                Console.WriteLine("Fall back to searching Registrations by structures");
+                Console.WriteLine($"MetadataRegistrationAddress: 0x{MetadataRegistrationAddress:X}");
+                Console.WriteLine($"CodeRegistrationAddress: 0x{CodeRegistrationAddress:X}");
             }
-
-            stream.Position = (long)OffsetFromVA(CodeRegistration1);
-
-            Il2CppCodeRegistration64 codeRegister = reader.Read<Il2CppCodeRegistration64>();
-            codeRegister.DumpToConsole();
-
-            Console.WriteLine($"Metadata.unresolvedVirtualCallParameterTypes {Metadata.unresolvedVirtualCallParameterTypes.Length}");
+            else
+            {
+                Console.WriteLine("Failed to find Registrations");
+            }
         }
 
+        public void Process()
+        {
 
+        }
+        // Function code exists when using Visual Studio when making x64 build
         const string RegistrationPattern = "4C 8D 05 ?? ?? ?? ?? 48 8D 15 ?? ?? ?? ?? 48 8D 0D ?? ?? ?? ?? E9 ?? ?? ?? ??";
         const long leaInstructionSize = 7;
         const long MetadataRegistrationInstructionOffset = leaInstructionSize * 1;
         const long CodeRegistrationInstructionOffset = leaInstructionSize * 2;
+        
         // Works with Unity 2018 & 2019 x64 OwO
         // Works with VRChat build 976 => Unity 2018.4.20 il2cpp 24.1
         // Works with BusinessTour => Unity 2019.4.1 il2cpp 24.3
@@ -145,28 +140,44 @@ namespace il2cpp_sdk_generator
             }
             Console.WriteLine($"Candidates: {candidates.Count}");
 
-            // Nothing found
-            if (candidates.Count == 0)
+            for(int i = 0;i<candidates.Count;i++)
+            {
+                // Get MetadataRegistrationAddress
+                int address = BinaryPattern.GetInt32_LE(candidates[i] + MetadataRegistrationInstructionOffset + 3);
+                MetadataRegistrationAddress = VAFromOffset((UInt64)candidates[i] + MetadataRegistrationInstructionOffset + leaInstructionSize) + (UInt64)address;
+
+                stream.Position = (long)OffsetFromVA(MetadataRegistrationAddress);
+                Il2CppMetadataRegistration64 metadataRegistration64 = reader.Read<Il2CppMetadataRegistration64>();
+                if (!metadataRegistration64.Validate())
+                    continue;
+
+                // Get CodeRegistrationAddress
+                address = BinaryPattern.GetInt32_LE(candidates[i] + CodeRegistrationInstructionOffset + 3);
+                CodeRegistrationAddress = VAFromOffset((UInt64)candidates[i] + CodeRegistrationInstructionOffset + leaInstructionSize) + (UInt64)address;
+
+                stream.Position = (long)OffsetFromVA(CodeRegistrationAddress);
+                Il2CppCodeRegistration64 codeRegistration64 = reader.Read<Il2CppCodeRegistration64>();
+                if (!codeRegistration64.Validate())
+                    continue;
+
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool FindRegistrationbyStructs(ref UInt64 CodeRegistrationAddress, ref UInt64 MetadataRegistrationAddress)
+        {
+            CodeRegistrationAddress = FindCodeRegistration();
+            if (CodeRegistrationAddress == 0UL)
                 return false;
 
-            // TODO: go through candidates and compare values pointed? 
-            // indexedMethods from metadata CodeRegistrationAddress
-            // typeDefinitions from metadata MetadataRegistrationAddress
-            if (candidates.Count != 1)
+            MetadataRegistrationAddress = FindMetadataRegistration();
+            if (MetadataRegistrationAddress == 0UL)
                 return false;
-
-            // Get MetadataRegistrationAddress
-            int address = BinaryPattern.GetInt32_LE(candidates[0] + MetadataRegistrationInstructionOffset + 3);
-            MetadataRegistrationAddress = VAFromOffset((UInt64)candidates[0] + MetadataRegistrationInstructionOffset + leaInstructionSize) + (UInt64)address;
-
-            // Get CodeRegistrationAddress
-            address = BinaryPattern.GetInt32_LE(candidates[0] + CodeRegistrationInstructionOffset + 3);
-            CodeRegistrationAddress = VAFromOffset((UInt64)candidates[0] + CodeRegistrationInstructionOffset + leaInstructionSize) + (UInt64)address;
 
             return true;
         }
-
-
 
         const long unresolvedVirtualCallCountOffset64 = 10L * 8L;
         // Works with VRChat build 976 => Unity 2018.4.20 il2cpp 24.1
@@ -203,23 +214,15 @@ namespace il2cpp_sdk_generator
                 // Next value should be VA(Virtual address) to array of methods
                 // should be within .rdata
                 // E0 B7 85 84 01 => 0x018485B7E0 
-                long methodTableOffset = (long)OffsetFromVA((ulong)reader.ReadInt64());
+                long methodTableOffset = (long)OffsetFromVA(reader.ReadUInt64());
                 Console.WriteLine($"methodTableOffset: 0x{methodTableOffset:X8}");
                 if(rdataSection != GetSectionByOffset((ulong)methodTableOffset))
-                {
-                    // move back position + size of checked value
-                    stream.Position = address + sizeof(long);
-                    continue;
-                }
+                    goto KEEP_SEARCHING;
 
                 // There should be enough space till end of section to contain whole table
-                if(methodTableOffset + (long)methodsCount*sizeof(ulong) > max_offset)
-                {
-                    // move back position + size of checked value
-                    stream.Position = address + sizeof(long);
-                    continue;
-                }
-                
+                if (methodTableOffset + (long)methodsCount*sizeof(ulong) > max_offset)
+                    goto KEEP_SEARCHING;
+
                 // check unresolvedVirtualCallCount
                 // NOTE: not sure if it always matches metadata values
                 // works with vrchat build 976
@@ -228,22 +231,13 @@ namespace il2cpp_sdk_generator
                 stream.Position = address + unresolvedVirtualCallCountOffset64; // unresolvedVirtualCallCount is 11th field
                 long unresolvedVirtualCallCountCandidate = reader.ReadInt64();
                 if(unresolvedVirtualCallCountCandidate != Metadata.unresolvedVirtualCallParameterTypes.Length)
-                {
-                    // move back position + size of checked value
-                    stream.Position = address + sizeof(long);
-                    continue;
-                }
+                    goto KEEP_SEARCHING;
 
-                //// Try to read whole structure and check pointers
+                // Try to read whole structure and check pointers
                 stream.Position = address;
-                
                 Il2CppCodeRegistration64 codeRegistration = reader.Read<Il2CppCodeRegistration64>();
                 if(!codeRegistration.Validate())
-                {
-                    // move back position + size of checked value
-                    stream.Position = address + sizeof(long);
-                    continue;
-                }             
+                    goto KEEP_SEARCHING;
 
                 Console.WriteLine($"unresolvedVirtualCallCountCandidate: {unresolvedVirtualCallCountCandidate}");
 
@@ -253,7 +247,7 @@ namespace il2cpp_sdk_generator
                 // 60 97 55 80 01 00 00 00 => 0x0180558760
                 var methodPtrs = reader.ReadArray<ulong>(methodsCount);
                 bool bFoundFaultyPtr = false;
-                for(int i=0;i<methodPtrs.Length;i++)
+                for(int i=0;i < methodsCount; i++)
                 {
                     IMAGE_SECTION_HEADER section = GetSectionByRVA(RVAFromVA(methodPtrs[i]));
                     // methods should be in execution sections
@@ -266,22 +260,20 @@ namespace il2cpp_sdk_generator
                 }
 
                 if(bFoundFaultyPtr)
-                {
-                    // move back position + size of checked value
-                    stream.Position = address + sizeof(long);
-                    continue;
-                }
+                    goto KEEP_SEARCHING;
 
                 return VAFromOffset((ulong)address);
+
+                KEEP_SEARCHING:
+                // move back position + size of checked value
+                stream.Position = address + sizeof(long);
+                continue;
             }
             
             return 0;
         }
-
-
-
-        const long fieldOffsetsCountOffset64 = 10L * 8L; //fieldOffsetsCount is 11th field
-
+        
+        const long fieldOffsetsCountOffset64 = 10L * 8L; // fieldOffsetsCount is 11th field
         /// <summary>
         ///  FindMetadataRegistration
         ///  in x64 spacing is 8bytes so we read longs even for int32 values
@@ -313,32 +305,32 @@ namespace il2cpp_sdk_generator
                 long address = stream.Position;
                 long fieldOffsetsCountCandidate = reader.ReadInt64();
                 if (fieldOffsetsCountCandidate != typeDefinitions)
-                    continue;
+                    goto KEEP_SEARCHING;
 
                 // Next value should be address to array so we skip it, maybe compare to imageBase
                 long fieldOffsetsAddr = reader.ReadInt64();
-                Console.WriteLine($"Skip1: {fieldOffsetsAddr}");
+                //Console.WriteLine($"Skip1: {fieldOffsetsAddr}");
                 long typeDefinitionsCandidate = reader.ReadInt64();
                 // This value should be typeDefinitionsCount and same as fieldOffsetsCount
                 if (typeDefinitionsCandidate != typeDefinitions)
-                    continue;
+                    goto KEEP_SEARCHING;
 
-                Console.WriteLine($"FindMetadataRegistration addr?: 0x{VAFromOffset((ulong)(address- 10L * 8L)):X8}");
+                //Console.WriteLine($"FindMetadataRegistration addr?: 0x{VAFromOffset((ulong)(address- 10L * 8L)):X8}");
 
-                // TEST
                 // Try to read structure from assumed address
                 stream.Position = address - fieldOffsetsCountOffset64; // fieldOffsetsCount is 11th field
                 Il2CppMetadataRegistration64 metadataRegistration = reader.Read<Il2CppMetadataRegistration64>();
                 if(!metadataRegistration.Validate())
-                {
-                    // move back position + size of checked value
-                    stream.Position = address + sizeof(long);
-                    continue;
-                }
+                    goto KEEP_SEARCHING;
 
-                // TODO: sanity check if pointers are valid?
+                // TODO: sanity check if pointer arrays are valid?
 
                 return VAFromOffset((ulong)(address - fieldOffsetsCountOffset64)); // fieldOffsetsCount is 11th field
+
+                KEEP_SEARCHING:
+                // move back position + size of checked value
+                stream.Position = address + sizeof(long);
+                continue;
             }
 
             return 0;
