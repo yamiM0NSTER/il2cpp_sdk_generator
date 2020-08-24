@@ -603,5 +603,36 @@ namespace il2cpp_sdk_generator
 
         // Section Header
         public const USHORT IMAGE_SIZEOF_SHORT_NAME = 8;
+
+        // Section characteristics
+        /// <summary>
+        /// The section contains executable code.
+        /// </summary>
+        public const DWORD IMAGE_SCN_CNT_CODE = 0x00000020;
+
+        /// <summary>
+        /// The section contains initialized data.
+        /// </summary>
+        public const DWORD IMAGE_SCN_CNT_INITIALIZED_DATA = 0x00000040;
+    
+        /// <summary>
+        /// The section can be executed as code.
+        /// </summary>
+        public const DWORD IMAGE_SCN_MEM_EXECUTE = 0x20000000;
+
+        /// <summary>
+        /// The section can be read.
+        /// </summary>
+        public const DWORD IMAGE_SCN_MEM_READ = 0x40000000;
+
+        /// <summary>
+        /// The section can be written to.
+        /// </summary>
+        public const DWORD IMAGE_SCN_MEM_WRITE = 0x80000000;
+
+
+        public const DWORD CHARACTERISTICS_DATA_MASK = IMAGE_SCN_MEM_WRITE | IMAGE_SCN_MEM_READ | IMAGE_SCN_CNT_INITIALIZED_DATA;
+        public const DWORD CHARACTERISTICS_DATA_MASK2 = IMAGE_SCN_MEM_READ | IMAGE_SCN_CNT_INITIALIZED_DATA;
+        public const DWORD CHARACTERISTICS_CODE_MASK = IMAGE_SCN_MEM_EXECUTE | IMAGE_SCN_MEM_READ | IMAGE_SCN_CNT_CODE;
     }
 }

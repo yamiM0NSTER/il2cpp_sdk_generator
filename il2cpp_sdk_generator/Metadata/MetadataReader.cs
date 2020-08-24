@@ -86,6 +86,8 @@ namespace il2cpp_sdk_generator
             Metadata.attributeTypeRanges = reader.ReadArray<Il2CppCustomAttributeTypeRange>(Metadata.header.attributesInfoCount / typeof(Il2CppCustomAttributeTypeRange).GetSizeOf());
             stream.Position = Metadata.header.attributeTypesOffset;
             Metadata.attributeTypes = reader.ReadArray<TypeIndex>(Metadata.header.attributeTypesCount / typeof(TypeIndex).GetSizeOf());
+            stream.Position = Metadata.header.unresolvedVirtualCallParameterRangesOffset;
+            Metadata.unresolvedVirtualCallParameterTypes = reader.ReadArray<TypeIndex>(Metadata.header.unresolvedVirtualCallParameterRangesCount / typeof(TypeIndex).GetSizeOf());
             // unresolvedVirtualCallParameterTypes
             // unresolvedVirtualCallParameterRanges
             // windowsRuntimeTypeNames // Il2CppWindowsRuntimeTypeNamePair

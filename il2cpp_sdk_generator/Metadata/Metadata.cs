@@ -44,7 +44,7 @@ namespace il2cpp_sdk_generator
         public static int32_t[] referencedAssemblies; // int32_t
         public static Il2CppCustomAttributeTypeRange[] attributeTypeRanges;
         public static TypeIndex[] attributeTypes; // TypeIndex
-        // unresolvedVirtualCallParameterTypes
+        public static TypeIndex[] unresolvedVirtualCallParameterTypes; // TypeIndex
         // unresolvedVirtualCallParameterRanges
         // windowsRuntimeTypeNames // Il2CppWindowsRuntimeTypeNamePair
         // exportedTypeDefinitions // TypeDefinitionIndex
