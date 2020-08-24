@@ -32,6 +32,7 @@ namespace il2cpp_sdk_generator
             BinaryPattern.SetAssemblyData(peBytes);
             PortableExecutableReader peReader = new PortableExecutableReader(new MemoryStream(peBytes));
             peReader.Read();
+            peReader.Process();
 
             Console.ReadLine();
         }

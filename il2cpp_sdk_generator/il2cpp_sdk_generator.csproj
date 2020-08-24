@@ -44,6 +44,8 @@
     <Compile Include="Extensions\BinaryReader.cs" />
     <Compile Include="Extensions\ObjectDump.cs" />
     <Compile Include="Extensions\Type.cs" />
+    <Compile Include="il2cpp\il2cpp.cs" />
+    <Compile Include="il2cpp\il2cppStructs.cs" />
     <Compile Include="Metadata\Metadata.cs" />
     <Compile Include="Metadata\MetadataReader.cs" />
     <Compile Include="Metadata\MetadataStructs.cs" />

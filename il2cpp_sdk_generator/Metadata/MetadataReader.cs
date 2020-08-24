@@ -23,6 +23,7 @@ namespace il2cpp_sdk_generator
             reader = new BinaryReader(memoryStream, Encoding.UTF8);
         }
 
+        // Here we just read whole Metadata file
         public void Read()
         {
             Metadata.header = reader.Read<Il2CppGlobalMetadataHeader>();
@@ -37,11 +38,6 @@ namespace il2cpp_sdk_generator
             Metadata.propertyDefinitions = reader.ReadArray<Il2CppPropertyDefinition>(Metadata.header.propertiesCount / typeof(Il2CppPropertyDefinition).GetSizeOf());
             stream.Position = Metadata.header.methodsOffset;
             Metadata.methodDefinitions = reader.ReadArray<Il2CppMethodDefinition>(Metadata.header.methodsCount / typeof(Il2CppMethodDefinition).GetSizeOf());
-            //foreach(var methodDef in Metadata.methodDefinitions)
-            //{
-            //    if (methodDef.methodIndex < 0)
-            //        methodDef.DumpToConsole();
-            //}
             stream.Position = Metadata.header.parametersOffset;
             Metadata.parameterDefaultValues = reader.ReadArray<Il2CppParameterDefaultValue>(Metadata.header.parametersCount / typeof(Il2CppParameterDefaultValue).GetSizeOf());
             stream.Position = Metadata.header.fieldDefaultValuesOffset;
@@ -88,12 +84,12 @@ namespace il2cpp_sdk_generator
             Metadata.attributeTypes = reader.ReadArray<TypeIndex>(Metadata.header.attributeTypesCount / typeof(TypeIndex).GetSizeOf());
             stream.Position = Metadata.header.unresolvedVirtualCallParameterRangesOffset;
             Metadata.unresolvedVirtualCallParameterTypes = reader.ReadArray<TypeIndex>(Metadata.header.unresolvedVirtualCallParameterRangesCount / typeof(TypeIndex).GetSizeOf());
-            // unresolvedVirtualCallParameterTypes
             // unresolvedVirtualCallParameterRanges
             // windowsRuntimeTypeNames // Il2CppWindowsRuntimeTypeNamePair
             // exportedTypeDefinitions // TypeDefinitionIndex
         }
 
+        // Here we process whatever can be processed for later use
         public void Process()
         {
 

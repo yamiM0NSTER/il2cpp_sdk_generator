@@ -21,6 +21,7 @@ namespace il2cpp_sdk_generator
             reader = new BinaryReader(memoryStream, Encoding.UTF8);
         }
 
+        // Here we just read all useful information about assembly
         public void Read()
         {
             PortableExecutable.dosHeader = reader.Read<IMAGE_DOS_HEADER>();
@@ -42,10 +43,13 @@ namespace il2cpp_sdk_generator
 
             PortableExecutable.imageFileHeader = reader.Read<IMAGE_FILE_HEADER>();
             PortableExecutable.imageFileHeader.DumpToConsole();
-
-            if(PortableExecutable.imageFileHeader.Machine == PE_Constants.IMAGE_FILE_MACHINE_AMD64)
+            //
+            if (PortableExecutable.imageFileHeader.Machine == PE_Constants.IMAGE_FILE_MACHINE_AMD64)
             {
                 Console.WriteLine($"IMAGE_FILE_HEADER Machine is x64 which is correct!");
+                // We read all 16 dataDirectory entries even though they can be invalid
+                long posBeforeimageOptionalHeader64 = stream.Position;
+                Console.WriteLine($"Position before imageOptionalHeader64: 0x{posBeforeimageOptionalHeader64:X8}");
                 PortableExecutable.imageOptionalHeader64 = reader.Read<IMAGE_OPTIONAL_HEADER64>();
                 PortableExecutable.imageOptionalHeader64.DumpToConsole();
                 foreach(var directory in PortableExecutable.imageOptionalHeader64.DataDirectory)
@@ -53,6 +57,9 @@ namespace il2cpp_sdk_generator
                     Console.WriteLine($"directory start: 0x{directory.RelativeVirtualAddress:X}");
                     Console.WriteLine($"directory end: 0x{directory.RelativeVirtualAddress + directory.Size:X}");
                 }
+                Console.WriteLine($"Position after imageOptionalHeader64: 0x{stream.Position:X8}");
+                Console.WriteLine($"Calculated Position after imageOptionalHeader64: 0x{posBeforeimageOptionalHeader64 + PE_Constants.IMAGE_OPTIONAL_HEADER64_DATA_DICTIONARY64_OFFSET + PortableExecutable.imageOptionalHeader64.NumberOfRvaAndSizes * typeof(IMAGE_DATA_DIRECTORY).GetSizeOf():X8}");
+                stream.Position = posBeforeimageOptionalHeader64 + PE_Constants.IMAGE_OPTIONAL_HEADER64_DATA_DICTIONARY64_OFFSET + PortableExecutable.imageOptionalHeader64.NumberOfRvaAndSizes * typeof(IMAGE_DATA_DIRECTORY).GetSizeOf();
             }
 
             PortableExecutable.imageSectionHeaders = reader.ReadArray<IMAGE_SECTION_HEADER>(PortableExecutable.imageFileHeader.NumberOfSections);
@@ -78,7 +85,11 @@ namespace il2cpp_sdk_generator
 
             Console.WriteLine($"dataSections.Count: {dataSections.Count}");
             Console.WriteLine($"codeSections.Count: {codeSections.Count}");
+        }
 
+        // Here we process whatever can be processed for later use
+        public void Process()
+        {
             UInt64 CodeRegistrationAddress = 0;
             UInt64 MetadataRegistrationAddress = 0;
             if (FindRegistrationByPattern(ref CodeRegistrationAddress, ref MetadataRegistrationAddress))
@@ -87,7 +98,7 @@ namespace il2cpp_sdk_generator
                 Console.WriteLine($"MetadataRegistrationAddress: 0x{MetadataRegistrationAddress:X}");
                 Console.WriteLine($"CodeRegistrationAddress: 0x{CodeRegistrationAddress:X}");
             }
-            else if(FindRegistrationbyStructs(ref CodeRegistrationAddress, ref MetadataRegistrationAddress))
+            else if (FindRegistrationbyStructs(ref CodeRegistrationAddress, ref MetadataRegistrationAddress))
             {
                 Console.WriteLine("Fall back to searching Registrations by structures");
                 Console.WriteLine($"MetadataRegistrationAddress: 0x{MetadataRegistrationAddress:X}");
@@ -97,11 +108,6 @@ namespace il2cpp_sdk_generator
             {
                 Console.WriteLine("Failed to find Registrations");
             }
-        }
-
-        public void Process()
-        {
-
         }
         // Function code exists when using Visual Studio when making x64 build
         const string RegistrationPattern = "4C 8D 05 ?? ?? ?? ?? 48 8D 15 ?? ?? ?? ?? 48 8D 0D ?? ?? ?? ?? E9 ?? ?? ?? ??";
@@ -395,7 +401,7 @@ namespace il2cpp_sdk_generator
             IMAGE_DATA_DIRECTORY dataDirectory = PortableExecutable.imageOptionalHeader64.DataDirectory[PE_Constants.IMAGE_DIRECTORY_ENTRY_EXPORT];
             if(dataDirectory.RelativeVirtualAddress == 0)
             {
-                Console.WriteLine($"Export Directory empty.");
+                Console.WriteLine($"Export Directory is empty.");
                 return;
             }
 
