@@ -81,13 +81,13 @@ namespace il2cpp_sdk_generator
                 Console.WriteLine($"0x{il2cpp.unresolvedVirtualCallPointers[i]:X8}");
             }
 
-            // TODO: Add interopData structure
             Console.WriteLine($"il2cpp.codeRegistration64.interopData: 0x{il2cpp.codeRegistration64.interopData:X8}");
             stream.Position = (long)PortableExecutableReader.OffsetFromVA(il2cpp.codeRegistration64.interopData);
-            il2cpp.interopData = reader.ReadArray<ulong>((int)il2cpp.codeRegistration64.interopDataCount);
+            il2cpp.interopData = reader.ReadArray<Il2CppInteropData>((int)il2cpp.codeRegistration64.interopDataCount);
             for (int i = 0; i < il2cpp.interopData.Length; i++)
             {
-                Console.WriteLine($"0x{il2cpp.interopData[i]:X8}");
+                il2cpp.interopData[i].DumpToConsole();
+                //Console.WriteLine($"0x{il2cpp.interopData[i]:X8}");
             }
 
             Console.WriteLine($"il2cpp.codeRegistration64.windowsRuntimeFactoryTable: 0x{il2cpp.codeRegistration64.windowsRuntimeFactoryTable:X8}");

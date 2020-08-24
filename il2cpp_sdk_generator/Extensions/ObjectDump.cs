@@ -22,6 +22,7 @@ namespace il2cpp_sdk_generator
         public static void DumpToConsole(this object instance, int indent = 0)
         {
             // TODO: Support unions/or just let them display same value @_@
+            // TODO: Support dumping arrays
             Type type = instance.GetType();
             if(type.IsPrimitive)
             {

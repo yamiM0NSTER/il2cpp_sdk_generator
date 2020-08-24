@@ -14,7 +14,7 @@ namespace il2cpp_sdk_generator
         public static ulong[] invokerPointers; // VA's
         public static ulong[] customAttributeGenerators; // VA's
         public static ulong[] unresolvedVirtualCallPointers; // VA's
-        public static ulong[] interopData; // VA's
+        public static Il2CppInteropData[] interopData; // VA's
         public static ulong[] windowsRuntimeFactoryTable; // VA's
 
 

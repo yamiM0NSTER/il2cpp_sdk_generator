@@ -264,8 +264,18 @@ namespace il2cpp_sdk_generator
                     return false;
             }
 
-
             return true;
         }
+    }
+
+    class Il2CppInteropData
+    {
+        public ulong delegatePInvokeWrapperFunction; // Il2CppMethodPointer
+        public ulong pinvokeMarshalToNativeFunction; // PInvokeMarshalToNativeFunc
+        public ulong pinvokeMarshalFromNativeFunction; // PInvokeMarshalFromNativeFunc
+        public ulong pinvokeMarshalCleanupFunction; // PInvokeMarshalCleanupFunc
+        public ulong createCCWFunction; // CreateCCWFunc
+        public ulong guid; // const Il2CppGuid*
+        public ulong type; // const Il2CppType*
     }
 }
