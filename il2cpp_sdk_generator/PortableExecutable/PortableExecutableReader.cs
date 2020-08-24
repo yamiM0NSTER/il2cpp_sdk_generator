@@ -87,19 +87,6 @@ namespace il2cpp_sdk_generator
                 Console.WriteLine($"MetadataRegistrationAddress: 0x{MetadataRegistrationAddress:X}");
                 Console.WriteLine($"CodeRegistrationAddress: 0x{CodeRegistrationAddress:X}");
             }
-            else
-            {
-                ulong CodeRegistration = FindCodeRegistration64Bit();
-                Console.WriteLine($"CodeRegistration: 0x{CodeRegistration:X32}");
-
-                Console.WriteLine($"Offset: 0x{OffsetFromRVA(CodeRegistration):X}");
-
-                var section1 = GetSectionByRVA(CodeRegistration);
-                var section_name = System.Text.Encoding.UTF8.GetString(section1.Name);
-                Console.WriteLine($"CodeRegistration section: {section_name}");
-                Console.WriteLine($"section start: 0x{section1.VirtualAddress:X}");
-                Console.WriteLine($"section end: 0x{section1.VirtualAddress + section1.Misc.VirtualSize:X}");
-            }
 
             ulong CodeRegistration1 = FindCodeRegistration();
             Console.WriteLine($"CodeRegistration1: 0x{CodeRegistration1:X8}");
