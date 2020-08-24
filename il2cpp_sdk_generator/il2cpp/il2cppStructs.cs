@@ -135,21 +135,21 @@ namespace il2cpp_sdk_generator
     class Il2CppCodeRegistration64
     {
         public long methodPointersCount;
-        public ulong methodPointers;
+        public ulong methodPointers; // Il2CppMethodPointer
         public long reversePInvokeWrapperCount;
-        public ulong reversePInvokeWrappers;
+        public ulong reversePInvokeWrappers; // Il2CppMethodPointer
         public long genericMethodPointersCount;
-        public ulong genericMethodPointers;
+        public ulong genericMethodPointers; // Il2CppMethodPointer
         public long invokerPointersCount;
-        public ulong invokerPointers;
+        public ulong invokerPointers; // InvokerMethod
         public long customAttributeCount;
-        public ulong customAttributeGenerators;
+        public ulong customAttributeGenerators; // CustomAttributesCacheGenerator
         public long unresolvedVirtualCallCount;
-        public ulong unresolvedVirtualCallPointers;
+        public ulong unresolvedVirtualCallPointers; // Il2CppMethodPointer
         public long interopDataCount;
-        public ulong interopData;
+        public ulong interopData; // Il2CppInteropData
         public long windowsRuntimeFactoryCount;
-        public ulong windowsRuntimeFactoryTable;
+        public ulong windowsRuntimeFactoryTable; // Il2CppWindowsRuntimeFactoryTableEntry
 
         // use indexedMethods from metadata to validate?
         public bool Validate()

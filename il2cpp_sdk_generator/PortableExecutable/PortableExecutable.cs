@@ -14,6 +14,10 @@ namespace il2cpp_sdk_generator
         public static IMAGE_OPTIONAL_HEADER64 imageOptionalHeader64;
         public static IMAGE_SECTION_HEADER[] imageSectionHeaders;
 
+        // Import
+        public static IMPORT_LOOKUP_TABLE_ENTRY[] importLookupTableEntries;
+        public static HINT_NAME_TABLE_ENTRY[] hintNameTableEntries;
+
         // Processed data
         public static Dictionary<string, IMAGE_SECTION_HEADER> m_mapSections = new Dictionary<string, IMAGE_SECTION_HEADER>();
     }

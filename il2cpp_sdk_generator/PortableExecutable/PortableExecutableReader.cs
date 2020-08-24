@@ -90,6 +90,7 @@ namespace il2cpp_sdk_generator
         // Here we process whatever can be processed for later use
         public void Process()
         {
+            // TODO: move these results to il2cpp storage class?
             UInt64 CodeRegistrationAddress = 0;
             UInt64 MetadataRegistrationAddress = 0;
             if (FindRegistrationByPattern(ref CodeRegistrationAddress, ref MetadataRegistrationAddress))
@@ -107,6 +108,8 @@ namespace il2cpp_sdk_generator
             else
             {
                 Console.WriteLine("Failed to find Registrations");
+                CodeRegistrationAddress = 0;
+                MetadataRegistrationAddress = 0;
             }
         }
         // Function code exists when using Visual Studio when making x64 build
@@ -152,22 +155,28 @@ namespace il2cpp_sdk_generator
                 int address = BinaryPattern.GetInt32_LE(candidates[i] + MetadataRegistrationInstructionOffset + 3);
                 MetadataRegistrationAddress = VAFromOffset((UInt64)candidates[i] + MetadataRegistrationInstructionOffset + leaInstructionSize) + (UInt64)address;
 
+                // Since we are reading it, we can cache it for later use
                 stream.Position = (long)OffsetFromVA(MetadataRegistrationAddress);
-                Il2CppMetadataRegistration64 metadataRegistration64 = reader.Read<Il2CppMetadataRegistration64>();
-                if (!metadataRegistration64.Validate())
+                il2cpp.metadataRegistration64 = reader.Read<Il2CppMetadataRegistration64>();
+                if (!il2cpp.metadataRegistration64.Validate())
                     continue;
 
                 // Get CodeRegistrationAddress
                 address = BinaryPattern.GetInt32_LE(candidates[i] + CodeRegistrationInstructionOffset + 3);
                 CodeRegistrationAddress = VAFromOffset((UInt64)candidates[i] + CodeRegistrationInstructionOffset + leaInstructionSize) + (UInt64)address;
 
+                // Since we are reading it, we can cache it for later use
                 stream.Position = (long)OffsetFromVA(CodeRegistrationAddress);
-                Il2CppCodeRegistration64 codeRegistration64 = reader.Read<Il2CppCodeRegistration64>();
-                if (!codeRegistration64.Validate())
+                il2cpp.codeRegistration64 = reader.Read<Il2CppCodeRegistration64>();
+                if (!il2cpp.codeRegistration64.Validate())
                     continue;
 
                 return true;
             }
+
+            // If not found ensure it's set to null
+            il2cpp.metadataRegistration64 = null;
+            il2cpp.codeRegistration64 = null;
 
             return false;
         }
@@ -241,8 +250,9 @@ namespace il2cpp_sdk_generator
 
                 // Try to read whole structure and check pointers
                 stream.Position = address;
-                Il2CppCodeRegistration64 codeRegistration = reader.Read<Il2CppCodeRegistration64>();
-                if(!codeRegistration.Validate())
+                // Since we are reading it, we can cache it for later use
+                il2cpp.codeRegistration64 = reader.Read<Il2CppCodeRegistration64>();
+                if(!il2cpp.codeRegistration64.Validate())
                     goto KEEP_SEARCHING;
 
                 Console.WriteLine($"unresolvedVirtualCallCountCandidate: {unresolvedVirtualCallCountCandidate}");
@@ -275,7 +285,10 @@ namespace il2cpp_sdk_generator
                 stream.Position = address + sizeof(long);
                 continue;
             }
-            
+
+            // If not found ensure it's set to null
+            il2cpp.codeRegistration64 = null;
+
             return 0;
         }
         
@@ -325,8 +338,9 @@ namespace il2cpp_sdk_generator
 
                 // Try to read structure from assumed address
                 stream.Position = address - fieldOffsetsCountOffset64; // fieldOffsetsCount is 11th field
-                Il2CppMetadataRegistration64 metadataRegistration = reader.Read<Il2CppMetadataRegistration64>();
-                if(!metadataRegistration.Validate())
+                // Since we are reading it, we can cache it for later use
+                il2cpp.metadataRegistration64 = reader.Read<Il2CppMetadataRegistration64>();
+                if(!il2cpp.metadataRegistration64.Validate())
                     goto KEEP_SEARCHING;
 
                 // TODO: sanity check if pointer arrays are valid?
@@ -339,36 +353,51 @@ namespace il2cpp_sdk_generator
                 continue;
             }
 
+            // If not found ensure it's set to null
+            il2cpp.metadataRegistration64 = null;
+
             return 0;
         }
 
 
         // Proper
-        public UInt64 VAFromRVA(UInt64 rva)
+        public static UInt64 VAFromRVA(UInt64 rva)
         {
             return rva + PortableExecutable.imageOptionalHeader64.ImageBase;
         }
 
-        public UInt64 RVAFromVA(UInt64 va)
+        // TODO: decide if return 0 or INVALID_RVA value if va is lower than imageBase somehow
+        public static UInt64 RVAFromVA(UInt64 va)
         {
             return va - PortableExecutable.imageOptionalHeader64.ImageBase;
         }
 
-        public UInt64 RVAFromOffset(UInt64 offset)
+        // TODO: decide if return 0 or INVALID_RVA value
+        public static UInt64 RVAFromOffset(UInt64 offset)
         {
-            var sectionHeader = PortableExecutable.imageSectionHeaders.First(header => header.PointerToRawData <= offset && header.PointerToRawData + header.SizeOfRawData >= offset);
+            var sectionHeader = PortableExecutable.imageSectionHeaders.FirstOrDefault(header => header.PointerToRawData <= offset && header.PointerToRawData + header.SizeOfRawData >= offset);
+            if (sectionHeader == null)
+                return 0;
+
             return offset + sectionHeader.VirtualAddress - sectionHeader.PointerToRawData;
         }
 
-        public UInt64 VAFromOffset(UInt64 offset)
+        // TODO: decide if return 0 or INVALID_VA value
+        public static UInt64 VAFromOffset(UInt64 offset)
         {
-            var sectionHeader = PortableExecutable.imageSectionHeaders.First(header => header.PointerToRawData <= offset && header.PointerToRawData + header.SizeOfRawData >= offset);
+            var sectionHeader = PortableExecutable.imageSectionHeaders.FirstOrDefault(header => header.PointerToRawData <= offset && header.PointerToRawData + header.SizeOfRawData >= offset);
+            if (sectionHeader == null)
+                return 0;
+
             return VAFromRVA(offset + sectionHeader.VirtualAddress - sectionHeader.PointerToRawData);
         }
 
-        public UInt64 OffsetFromRVA(UInt64 rva)
+        // TODO: decide if return 0 or INVALID_OFFSET value
+        public static UInt64 OffsetFromRVA(UInt64 rva)
         {
-            var sectionHeader = PortableExecutable.imageSectionHeaders.First(header => header.VirtualAddress <= rva && header.VirtualAddress + header.Misc.VirtualSize >= rva);
+            var sectionHeader = PortableExecutable.imageSectionHeaders.FirstOrDefault(header => header.VirtualAddress <= rva && header.VirtualAddress + header.Misc.VirtualSize >= rva);
+            if (sectionHeader == null)
+                return 0;
 
             return rva - sectionHeader.VirtualAddress + sectionHeader.PointerToRawData;
         }
@@ -383,7 +412,7 @@ namespace il2cpp_sdk_generator
             return PortableExecutable.imageSectionHeaders.FirstOrDefault(header => header.PointerToRawData <= offset && header.PointerToRawData + header.SizeOfRawData >= offset);
         }
 
-        public UInt64 OffsetFromVA(UInt64 va)
+        public static UInt64 OffsetFromVA(UInt64 va)
         {
             var rva = RVAFromVA(va);
             
@@ -414,15 +443,13 @@ namespace il2cpp_sdk_generator
             // NULL-terminated string
             // TODO: Read string till null function
             Console.WriteLine($"exportDirectoryTable name from RVA: {reader.ReadNullTerminatedString()}");
-            
-            //Byte[] name = reader.ReadArray<Byte>(17);
-            //Console.WriteLine($"exportDirectoryTable name from RVA: {System.Text.Encoding.UTF8.GetString(name)}");
 
             if(exportDirectoryTable.AddressTableEntries != exportDirectoryTable.NumberofNamePointers)
             {
                 // Skip if number of functions doesn't equal nuumber of names until ordinal table is prepared.
                 return;
             }
+
             // Read Export Address Table
             if(exportDirectoryTable.ExportAddressTableRVA > 0)
             {
@@ -439,6 +466,8 @@ namespace il2cpp_sdk_generator
                         Console.WriteLine($"Section name: {section_name}");
                     }
                     // else all are within PE
+
+                    Console.WriteLine($"Func[{i}] 0x{VAFromRVA(exportAddressTableEntries[i].ExportRVA):X8} section: {section_name}");
                 }
             }
 
@@ -491,13 +520,15 @@ namespace il2cpp_sdk_generator
             IMPORT_DIRECTORY_TABLE_ENTRY[] importDirectoryTables = reader.ReadArray<IMPORT_DIRECTORY_TABLE_ENTRY>((int)dataDirectory.Size / typeof(IMPORT_DIRECTORY_TABLE_ENTRY).GetSizeOf());
             foreach(var importDirectoryTable in importDirectoryTables)
             {
-                importDirectoryTable.DumpToConsole();
+                //importDirectoryTable.DumpToConsole();
                 if (importDirectoryTable.ImportLookupTableRVA == 0)
                     continue;
+                stream.Position = (long)OffsetFromRVA(importDirectoryTable.NameRVA);
+                Console.WriteLine($"DLL: {reader.ReadNullTerminatedString()}");
                 stream.Position = (long)OffsetFromRVA(importDirectoryTable.ImportLookupTableRVA);
                 List<IMPORT_LOOKUP_TABLE_ENTRY> importLookupTableList = new List<IMPORT_LOOKUP_TABLE_ENTRY>();
                 IMPORT_LOOKUP_TABLE_ENTRY importLookupTableEntry = reader.Read<IMPORT_LOOKUP_TABLE_ENTRY>();
-                while (importLookupTableEntry.Ordinal_NameFlag != 0)
+                while (importLookupTableEntry.Ordinal_NameFlag != 0 || importLookupTableEntry.OrdinalNumber != 0 || importLookupTableEntry.Hint_NameTableRVA != 0)
                 {
                     importLookupTableList.Add(importLookupTableEntry);
 
@@ -505,15 +536,21 @@ namespace il2cpp_sdk_generator
                     //importLookupTableEntry.DumpToConsole();
                     importLookupTableEntry = reader.Read<IMPORT_LOOKUP_TABLE_ENTRY>();
                 }
+                PortableExecutable.importLookupTableEntries = importLookupTableList.ToArray();
+                PortableExecutable.hintNameTableEntries = new HINT_NAME_TABLE_ENTRY[PortableExecutable.importLookupTableEntries.Length];
 
-
-                foreach (var entry in importLookupTableList)
+                for(int i =0; i<PortableExecutable.importLookupTableEntries.Length;i++)
                 {
-                    if (!entry.ImportByOrdinal)
+                    if (!PortableExecutable.importLookupTableEntries[i].ImportByOrdinal)
                     {
-                        stream.Position = (long)OffsetFromRVA(entry.Hint_NameTableRVA);
-                        HINT_NAME_TABLE_ENTRY hintNameTableEntry = reader.Read<HINT_NAME_TABLE_ENTRY>();
-                        hintNameTableEntry.DumpToConsole();
+                        stream.Position = (long)OffsetFromRVA(PortableExecutable.importLookupTableEntries[i].Hint_NameTableRVA);
+                        PortableExecutable.hintNameTableEntries[i] = reader.Read<HINT_NAME_TABLE_ENTRY>();
+                        //PortableExecutable.hintNameTableEntries[i].DumpToConsole();
+                        Console.WriteLine($" {PortableExecutable.hintNameTableEntries[i].Name}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($" Ordinal: {PortableExecutable.importLookupTableEntries[i].OrdinalNumber}");
                     }
                 }
             }
