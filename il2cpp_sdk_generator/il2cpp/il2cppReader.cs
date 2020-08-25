@@ -23,6 +23,9 @@ namespace il2cpp_sdk_generator
         {
             if(il2cpp.codeRegistration64 != null)
                 ReadCodeRegistration();
+
+            if (il2cpp.metadataRegistration64 != null)
+                ReadMetadataRegistration();
         }
 
         public static void Process()
@@ -30,10 +33,114 @@ namespace il2cpp_sdk_generator
 
         }
 
+        private static void ReadMetadataRegistration()
+        {
+            Console.WriteLine($"il2cpp.metadataRegistration64.genericClasses: 0x{il2cpp.metadataRegistration64.genericClasses:X8}");
+            stream.Position = (long)Offset.FromVA(il2cpp.metadataRegistration64.genericClasses);
+            il2cpp.genericClassesPtrs = reader.ReadArray<ulong>((int)il2cpp.metadataRegistration64.genericClassesCount);
+            il2cpp.genericClasses = new Il2CppGenericClass[il2cpp.metadataRegistration64.genericClassesCount];
+            for (int i = 0; i < il2cpp.genericClassesPtrs.Length; i++)
+            {
+                stream.Position = (long)Offset.FromVA(il2cpp.genericClassesPtrs[i]);
+                il2cpp.genericClasses[i] = reader.Read<Il2CppGenericClass>();
+                //Console.WriteLine($"0x{il2cpp.genericClassesPtrs[i]:X8}");
+                if(il2cpp.genericClasses[i].cached_class != 0)
+                    il2cpp.genericClasses[i].DumpToConsole();
+            }
+
+            Console.WriteLine($"il2cpp.metadataRegistration64.genericInsts: 0x{il2cpp.metadataRegistration64.genericInsts:X8}");
+            stream.Position = (long)Offset.FromVA(il2cpp.metadataRegistration64.genericInsts);
+            il2cpp.genericInstsPtrs = reader.ReadArray<ulong>((int)il2cpp.metadataRegistration64.genericInstsCount);
+            il2cpp.genericInsts = new Il2CppGenericInst[il2cpp.metadataRegistration64.genericInstsCount];
+            for (int i = 0; i < il2cpp.genericInstsPtrs.Length; i++)
+            {
+                stream.Position = (long)Offset.FromVA(il2cpp.genericInstsPtrs[i]);
+                il2cpp.genericInsts[i] = reader.Read<Il2CppGenericInst>();
+                //Console.WriteLine($"0x{il2cpp.genericClassesPtrs[i]:X8}");
+                //il2cpp.genericInsts[i].DumpToConsole();
+            }
+
+            Console.WriteLine($"il2cpp.metadataRegistration64.genericMethodTable: 0x{il2cpp.metadataRegistration64.genericMethodTable:X8}");
+            stream.Position = (long)Offset.FromVA(il2cpp.metadataRegistration64.genericMethodTable);
+            il2cpp.genericMethodTable = reader.ReadArray<Il2CppGenericMethodFunctionsDefinitions>((int)il2cpp.metadataRegistration64.genericMethodTableCount);
+            //for (int i = 0; i < il2cpp.genericMethodTable.Length; i++)
+            //{
+            //    il2cpp.genericMethodTable[i].DumpToConsole();
+            //}
+
+            Console.WriteLine($"il2cpp.metadataRegistration64.types: 0x{il2cpp.metadataRegistration64.types:X8}");
+            stream.Position = (long)Offset.FromVA(il2cpp.metadataRegistration64.types);
+            il2cpp.typesPtrs = reader.ReadArray<ulong>((int)il2cpp.metadataRegistration64.typesCount);
+            il2cpp.types = new Il2CppType[il2cpp.metadataRegistration64.typesCount];
+            for (int i = 0; i < il2cpp.typesPtrs.Length; i++)
+            {
+                stream.Position = (long)Offset.FromVA(il2cpp.typesPtrs[i]);
+                il2cpp.types[i] = reader.Read<Il2CppType>();
+                //il2cpp.types[i].DumpToConsole();
+                //Console.WriteLine($"0x{il2cpp.types[i].type}");
+                //Console.WriteLine($"0x{il2cpp.genericClassesPtrs[i]:X8}");
+                //il2cpp.genericInsts[i].DumpToConsole();
+            }
+
+            Console.WriteLine($"il2cpp.metadataRegistration64.methodSpecs: 0x{il2cpp.metadataRegistration64.methodSpecs:X8}");
+            stream.Position = (long)Offset.FromVA(il2cpp.metadataRegistration64.methodSpecs);
+            il2cpp.methodSpecs = reader.ReadArray<Il2CppMethodSpec>((int)il2cpp.metadataRegistration64.methodSpecsCount);
+            //for (int i = 0; i < il2cpp.methodSpecs.Length; i++)
+            //{
+            //    il2cpp.methodSpecs[i].DumpToConsole();
+            //}
+
+            Console.WriteLine($"il2cpp.metadataRegistration64.fieldOffsets: 0x{il2cpp.metadataRegistration64.fieldOffsets:X8}");
+            stream.Position = (long)Offset.FromVA(il2cpp.metadataRegistration64.fieldOffsets);
+            il2cpp.fieldOffsetsPtrs = reader.ReadArray<ulong>((int)il2cpp.metadataRegistration64.fieldOffsetsCount);
+            il2cpp.fieldOffsets = new Int32[il2cpp.metadataRegistration64.fieldOffsetsCount];
+            for (int i = 0; i < il2cpp.fieldOffsetsPtrs.Length; i++)
+            {
+                // Skip null ptrs
+                if (il2cpp.fieldOffsetsPtrs[i] == 0)
+                    continue;
+
+                stream.Position = (long)Offset.FromVA(il2cpp.fieldOffsetsPtrs[i]);
+                il2cpp.fieldOffsets[i] = reader.Read<Int32>();
+                //il2cpp.fieldOffsets[i].DumpToConsole();
+                //il2cpp.types[i].DumpToConsole();
+                //Console.WriteLine($"0x{il2cpp.types[i].type}");
+                //Console.WriteLine($"0x{il2cpp.genericClassesPtrs[i]:X8}");
+                //il2cpp.genericInsts[i].DumpToConsole();
+            }
+
+            Console.WriteLine($"il2cpp.metadataRegistration64.typeDefinitionsSizes: 0x{il2cpp.metadataRegistration64.typeDefinitionsSizes:X8}");
+            stream.Position = (long)Offset.FromVA(il2cpp.metadataRegistration64.typeDefinitionsSizes);
+            il2cpp.typeDefinitionsSizesPtrs = reader.ReadArray<ulong>((int)il2cpp.metadataRegistration64.typeDefinitionsSizesCount);
+            il2cpp.typeDefinitionsSizes = new Il2CppTypeDefinitionSizes[il2cpp.metadataRegistration64.typeDefinitionsSizesCount];
+            for (int i = 0; i < il2cpp.typeDefinitionsSizesPtrs.Length; i++)
+            {
+                // Skip null ptrs
+                if (il2cpp.typeDefinitionsSizesPtrs[i] == 0)
+                    continue;
+
+                stream.Position = (long)Offset.FromVA(il2cpp.typeDefinitionsSizesPtrs[i]);
+                il2cpp.typeDefinitionsSizes[i] = reader.Read<Il2CppTypeDefinitionSizes>();
+                //il2cpp.typeDefinitionsSizes[i].DumpToConsole();
+            //    //il2cpp.types[i].DumpToConsole();
+            //    //Console.WriteLine($"0x{il2cpp.types[i].type}");
+            //    //Console.WriteLine($"0x{il2cpp.genericClassesPtrs[i]:X8}");
+            //    //il2cpp.genericInsts[i].DumpToConsole();
+            }
+
+            Console.WriteLine($"il2cpp.metadataRegistration64.metadataUsages: 0x{il2cpp.metadataRegistration64.metadataUsages:X8}");
+            stream.Position = (long)Offset.FromVA(il2cpp.metadataRegistration64.metadataUsages);
+            il2cpp.metadataUsages = reader.ReadArray<ulong>((int)il2cpp.metadataRegistration64.metadataUsagesCount);
+            //for (int i = 0; i < il2cpp.metadataUsages.Length; i++)
+            //{
+            //    il2cpp.metadataUsages[i].DumpToConsole();
+            //}
+        }
+
         private static void ReadCodeRegistration()
         {
             Console.WriteLine($"il2cpp.codeRegistration64.methodPointers: 0x{il2cpp.codeRegistration64.methodPointers:X8}");
-            stream.Position = (long)PortableExecutableReader.OffsetFromVA(il2cpp.codeRegistration64.methodPointers);
+            stream.Position = (long)Offset.FromVA(il2cpp.codeRegistration64.methodPointers);
             il2cpp.methodPointers = reader.ReadArray<ulong>((int)il2cpp.codeRegistration64.methodPointersCount);
             //for(int i=0;i< il2cpp.methodPointers.Length;i++)
             //{
@@ -42,56 +149,56 @@ namespace il2cpp_sdk_generator
             //stream.Position = il2cpp.codeRegistration64.methodPointers;
 
             Console.WriteLine($"il2cpp.codeRegistration64.reversePInvokeWrappers: 0x{il2cpp.codeRegistration64.reversePInvokeWrappers:X8}");
-            stream.Position = (long)PortableExecutableReader.OffsetFromVA(il2cpp.codeRegistration64.reversePInvokeWrappers);
+            stream.Position = (long)Offset.FromVA(il2cpp.codeRegistration64.reversePInvokeWrappers);
             il2cpp.reversePInvokeWrappers = reader.ReadArray<ulong>((int)il2cpp.codeRegistration64.reversePInvokeWrapperCount);
-            for (int i = 0; i < il2cpp.reversePInvokeWrappers.Length; i++)
-            {
-                Console.WriteLine($"0x{il2cpp.reversePInvokeWrappers[i]:X8}");
-            }
+            //for (int i = 0; i < il2cpp.reversePInvokeWrappers.Length; i++)
+            //{
+            //    Console.WriteLine($"0x{il2cpp.reversePInvokeWrappers[i]:X8}");
+            //}
 
             Console.WriteLine($"il2cpp.codeRegistration64.genericMethodPointers: 0x{il2cpp.codeRegistration64.genericMethodPointers:X8}");
-            stream.Position = (long)PortableExecutableReader.OffsetFromVA(il2cpp.codeRegistration64.genericMethodPointers);
+            stream.Position = (long)Offset.FromVA(il2cpp.codeRegistration64.genericMethodPointers);
             il2cpp.genericMethodPointers = reader.ReadArray<ulong>((int)il2cpp.codeRegistration64.genericMethodPointersCount);
-            for (int i = 0; i < il2cpp.genericMethodPointers.Length; i++)
-            {
-                Console.WriteLine($"0x{il2cpp.genericMethodPointers[i]:X8}");
-            }
+            //for (int i = 0; i < il2cpp.genericMethodPointers.Length; i++)
+            //{
+            //    Console.WriteLine($"0x{il2cpp.genericMethodPointers[i]:X8}");
+            //}
 
             Console.WriteLine($"il2cpp.codeRegistration64.invokerPointers: 0x{il2cpp.codeRegistration64.invokerPointers:X8}");
-            stream.Position = (long)PortableExecutableReader.OffsetFromVA(il2cpp.codeRegistration64.invokerPointers);
+            stream.Position = (long)Offset.FromVA(il2cpp.codeRegistration64.invokerPointers);
             il2cpp.invokerPointers = reader.ReadArray<ulong>((int)il2cpp.codeRegistration64.invokerPointersCount);
-            for (int i = 0; i < il2cpp.invokerPointers.Length; i++)
-            {
-                Console.WriteLine($"0x{il2cpp.invokerPointers[i]:X8}");
-            }
+            //for (int i = 0; i < il2cpp.invokerPointers.Length; i++)
+            //{
+            //    Console.WriteLine($"0x{il2cpp.invokerPointers[i]:X8}");
+            //}
 
             Console.WriteLine($"il2cpp.codeRegistration64.customAttributeGenerators: 0x{il2cpp.codeRegistration64.customAttributeGenerators:X8}");
-            stream.Position = (long)PortableExecutableReader.OffsetFromVA(il2cpp.codeRegistration64.customAttributeGenerators);
+            stream.Position = (long)Offset.FromVA(il2cpp.codeRegistration64.customAttributeGenerators);
             il2cpp.customAttributeGenerators = reader.ReadArray<ulong>((int)il2cpp.codeRegistration64.customAttributeCount);
-            for (int i = 0; i < il2cpp.customAttributeGenerators.Length; i++)
-            {
-                Console.WriteLine($"0x{il2cpp.customAttributeGenerators[i]:X8}");
-            }
+            //for (int i = 0; i < il2cpp.customAttributeGenerators.Length; i++)
+            //{
+            //    Console.WriteLine($"0x{il2cpp.customAttributeGenerators[i]:X8}");
+            //}
 
             Console.WriteLine($"il2cpp.codeRegistration64.unresolvedVirtualCallPointers: 0x{il2cpp.codeRegistration64.unresolvedVirtualCallPointers:X8}");
-            stream.Position = (long)PortableExecutableReader.OffsetFromVA(il2cpp.codeRegistration64.unresolvedVirtualCallPointers);
+            stream.Position = (long)Offset.FromVA(il2cpp.codeRegistration64.unresolvedVirtualCallPointers);
             il2cpp.unresolvedVirtualCallPointers = reader.ReadArray<ulong>((int)il2cpp.codeRegistration64.unresolvedVirtualCallCount);
-            for (int i = 0; i < il2cpp.unresolvedVirtualCallPointers.Length; i++)
-            {
-                Console.WriteLine($"0x{il2cpp.unresolvedVirtualCallPointers[i]:X8}");
-            }
+            //for (int i = 0; i < il2cpp.unresolvedVirtualCallPointers.Length; i++)
+            //{
+            //    Console.WriteLine($"0x{il2cpp.unresolvedVirtualCallPointers[i]:X8}");
+            //}
 
             Console.WriteLine($"il2cpp.codeRegistration64.interopData: 0x{il2cpp.codeRegistration64.interopData:X8}");
-            stream.Position = (long)PortableExecutableReader.OffsetFromVA(il2cpp.codeRegistration64.interopData);
+            stream.Position = (long)Offset.FromVA(il2cpp.codeRegistration64.interopData);
             il2cpp.interopData = reader.ReadArray<Il2CppInteropData>((int)il2cpp.codeRegistration64.interopDataCount);
-            for (int i = 0; i < il2cpp.interopData.Length; i++)
-            {
-                il2cpp.interopData[i].DumpToConsole();
-                //Console.WriteLine($"0x{il2cpp.interopData[i]:X8}");
-            }
+            //for (int i = 0; i < il2cpp.interopData.Length; i++)
+            //{
+            //    il2cpp.interopData[i].DumpToConsole();
+            //    //Console.WriteLine($"0x{il2cpp.interopData[i]:X8}");
+            //}
 
             Console.WriteLine($"il2cpp.codeRegistration64.windowsRuntimeFactoryTable: 0x{il2cpp.codeRegistration64.windowsRuntimeFactoryTable:X8}");
-            stream.Position = (long)PortableExecutableReader.OffsetFromVA(il2cpp.codeRegistration64.windowsRuntimeFactoryTable);
+            stream.Position = (long)Offset.FromVA(il2cpp.codeRegistration64.windowsRuntimeFactoryTable);
             il2cpp.windowsRuntimeFactoryTable = reader.ReadArray<ulong>((int)il2cpp.codeRegistration64.windowsRuntimeFactoryCount);
             //for (int i = 0; i < il2cpp.windowsRuntimeFactoryTable.Length; i++)
             //{

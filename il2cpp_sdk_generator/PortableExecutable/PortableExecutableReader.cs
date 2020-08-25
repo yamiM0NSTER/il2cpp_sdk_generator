@@ -153,20 +153,20 @@ namespace il2cpp_sdk_generator
             {
                 // Get MetadataRegistrationAddress
                 int address = BinaryPattern.GetInt32_LE(candidates[i] + MetadataRegistrationInstructionOffset + 3);
-                MetadataRegistrationAddress = VAFromOffset((UInt64)candidates[i] + MetadataRegistrationInstructionOffset + leaInstructionSize) + (UInt64)address;
+                MetadataRegistrationAddress = VA.FromOffset((UInt64)candidates[i] + MetadataRegistrationInstructionOffset + leaInstructionSize) + (UInt64)address;
 
                 // Since we are reading it, we can cache it for later use
-                stream.Position = (long)OffsetFromVA(MetadataRegistrationAddress);
+                stream.Position = (long)Offset.FromVA(MetadataRegistrationAddress);
                 il2cpp.metadataRegistration64 = reader.Read<Il2CppMetadataRegistration64>();
                 if (!il2cpp.metadataRegistration64.Validate())
                     continue;
 
                 // Get CodeRegistrationAddress
                 address = BinaryPattern.GetInt32_LE(candidates[i] + CodeRegistrationInstructionOffset + 3);
-                CodeRegistrationAddress = VAFromOffset((UInt64)candidates[i] + CodeRegistrationInstructionOffset + leaInstructionSize) + (UInt64)address;
+                CodeRegistrationAddress = VA.FromOffset((UInt64)candidates[i] + CodeRegistrationInstructionOffset + leaInstructionSize) + (UInt64)address;
 
                 // Since we are reading it, we can cache it for later use
-                stream.Position = (long)OffsetFromVA(CodeRegistrationAddress);
+                stream.Position = (long)Offset.FromVA(CodeRegistrationAddress);
                 il2cpp.codeRegistration64 = reader.Read<Il2CppCodeRegistration64>();
                 if (!il2cpp.codeRegistration64.Validate())
                     continue;
@@ -229,9 +229,9 @@ namespace il2cpp_sdk_generator
                 // Next value should be VA(Virtual address) to array of methods
                 // should be within .rdata
                 // E0 B7 85 84 01 => 0x018485B7E0 
-                long methodTableOffset = (long)OffsetFromVA(reader.ReadUInt64());
+                long methodTableOffset = (long)Offset.FromVA(reader.ReadUInt64());
                 Console.WriteLine($"methodTableOffset: 0x{methodTableOffset:X8}");
-                if(rdataSection != GetSectionByOffset((ulong)methodTableOffset))
+                if(rdataSection != Section.ByOffset((ulong)methodTableOffset))
                     goto KEEP_SEARCHING;
 
                 // There should be enough space till end of section to contain whole table
@@ -265,11 +265,11 @@ namespace il2cpp_sdk_generator
                 bool bFoundFaultyPtr = false;
                 for(int i=0;i < methodsCount; i++)
                 {
-                    IMAGE_SECTION_HEADER section = GetSectionByRVA(RVAFromVA(methodPtrs[i]));
+                    IMAGE_SECTION_HEADER section = Section.ByRVA(RVA.FromVA(methodPtrs[i]));
                     // methods should be in execution sections
                     if (il2cppSection != section && textSection != section)
                     {
-                        Console.WriteLine($"i: {i} addr: 0x{methodPtrs[i]:X8} section: {System.Text.Encoding.UTF8.GetString(GetSectionByRVA(RVAFromVA(methodPtrs[i])).Name).TrimEnd('\0')} :Thonk:");
+                        Console.WriteLine($"i: {i} addr: 0x{methodPtrs[i]:X8} section: {System.Text.Encoding.UTF8.GetString(Section.ByRVA(RVA.FromVA(methodPtrs[i])).Name).TrimEnd('\0')} :Thonk:");
                         bFoundFaultyPtr = true;
                         break;
                     }
@@ -278,7 +278,7 @@ namespace il2cpp_sdk_generator
                 if(bFoundFaultyPtr)
                     goto KEEP_SEARCHING;
 
-                return VAFromOffset((ulong)address);
+                return VA.FromOffset((ulong)address);
 
                 KEEP_SEARCHING:
                 // move back position + size of checked value
@@ -345,7 +345,7 @@ namespace il2cpp_sdk_generator
 
                 // TODO: sanity check if pointer arrays are valid?
 
-                return VAFromOffset((ulong)(address - fieldOffsetsCountOffset64)); // fieldOffsetsCount is 11th field
+                return VA.FromOffset((ulong)(address - fieldOffsetsCountOffset64)); // fieldOffsetsCount is 11th field
 
                 KEEP_SEARCHING:
                 // move back position + size of checked value
@@ -361,63 +361,17 @@ namespace il2cpp_sdk_generator
 
 
         // Proper
-        public static UInt64 VAFromRVA(UInt64 rva)
-        {
-            return rva + PortableExecutable.imageOptionalHeader64.ImageBase;
-        }
+        
 
-        // TODO: decide if return 0 or INVALID_RVA value if va is lower than imageBase somehow
-        public static UInt64 RVAFromVA(UInt64 va)
-        {
-            return va - PortableExecutable.imageOptionalHeader64.ImageBase;
-        }
+        
 
-        // TODO: decide if return 0 or INVALID_RVA value
-        public static UInt64 RVAFromOffset(UInt64 offset)
-        {
-            var sectionHeader = PortableExecutable.imageSectionHeaders.FirstOrDefault(header => header.PointerToRawData <= offset && header.PointerToRawData + header.SizeOfRawData >= offset);
-            if (sectionHeader == null)
-                return 0;
+        
 
-            return offset + sectionHeader.VirtualAddress - sectionHeader.PointerToRawData;
-        }
+        
 
-        // TODO: decide if return 0 or INVALID_VA value
-        public static UInt64 VAFromOffset(UInt64 offset)
-        {
-            var sectionHeader = PortableExecutable.imageSectionHeaders.FirstOrDefault(header => header.PointerToRawData <= offset && header.PointerToRawData + header.SizeOfRawData >= offset);
-            if (sectionHeader == null)
-                return 0;
+        
 
-            return VAFromRVA(offset + sectionHeader.VirtualAddress - sectionHeader.PointerToRawData);
-        }
-
-        // TODO: decide if return 0 or INVALID_OFFSET value
-        public static UInt64 OffsetFromRVA(UInt64 rva)
-        {
-            var sectionHeader = PortableExecutable.imageSectionHeaders.FirstOrDefault(header => header.VirtualAddress <= rva && header.VirtualAddress + header.Misc.VirtualSize >= rva);
-            if (sectionHeader == null)
-                return 0;
-
-            return rva - sectionHeader.VirtualAddress + sectionHeader.PointerToRawData;
-        }
-
-        public IMAGE_SECTION_HEADER GetSectionByRVA(UInt64 rva)
-        {
-            return PortableExecutable.imageSectionHeaders.FirstOrDefault(header => header.VirtualAddress <= rva && header.VirtualAddress + header.Misc.VirtualSize >= rva);
-        }
-
-        public IMAGE_SECTION_HEADER GetSectionByOffset(UInt64 offset)
-        {
-            return PortableExecutable.imageSectionHeaders.FirstOrDefault(header => header.PointerToRawData <= offset && header.PointerToRawData + header.SizeOfRawData >= offset);
-        }
-
-        public static UInt64 OffsetFromVA(UInt64 va)
-        {
-            var rva = RVAFromVA(va);
-            
-            return OffsetFromRVA(rva);
-        }
+        
 
         public void ReadExportDirectory()
         {
@@ -434,12 +388,12 @@ namespace il2cpp_sdk_generator
                 return;
             }
 
-            stream.Position = (long)OffsetFromRVA(dataDirectory.RelativeVirtualAddress);
+            stream.Position = (long)Offset.FromRVA(dataDirectory.RelativeVirtualAddress);
 
             EXPORT_DIRECTORY_TABLE exportDirectoryTable = reader.Read<EXPORT_DIRECTORY_TABLE>();
             exportDirectoryTable.DumpToConsole();
 
-            stream.Position = (long)OffsetFromRVA(exportDirectoryTable.NameRVA);
+            stream.Position = (long)Offset.FromRVA(exportDirectoryTable.NameRVA);
             // NULL-terminated string
             // TODO: Read string till null function
             Console.WriteLine($"exportDirectoryTable name from RVA: {reader.ReadNullTerminatedString()}");
@@ -453,11 +407,11 @@ namespace il2cpp_sdk_generator
             // Read Export Address Table
             if(exportDirectoryTable.ExportAddressTableRVA > 0)
             {
-                stream.Position = (long)OffsetFromRVA(exportDirectoryTable.ExportAddressTableRVA);
+                stream.Position = (long)Offset.FromRVA(exportDirectoryTable.ExportAddressTableRVA);
                 EXPORT_ADDRESS_TABLE_ENTRY[] exportAddressTableEntries = reader.ReadArray<EXPORT_ADDRESS_TABLE_ENTRY>((int)exportDirectoryTable.AddressTableEntries);
                 for (int i=0;i<exportDirectoryTable.AddressTableEntries;i++)
                 {
-                    var section = GetSectionByRVA(exportAddressTableEntries[i].ExportRVA);
+                    var section = Section.ByRVA(exportAddressTableEntries[i].ExportRVA);
                     var section_name = System.Text.Encoding.UTF8.GetString(section.Name);
                     // Exports are external
                     if(!section_name.StartsWith(".text"))
@@ -467,22 +421,22 @@ namespace il2cpp_sdk_generator
                     }
                     // else all are within PE
 
-                    Console.WriteLine($"Func[{i}] 0x{VAFromRVA(exportAddressTableEntries[i].ExportRVA):X8} section: {section_name}");
+                    Console.WriteLine($"Func[{i}] 0x{VA.FromRVA(exportAddressTableEntries[i].ExportRVA):X8} section: {section_name}");
                 }
             }
 
             // Read Export names
             if (exportDirectoryTable.NamePointerRVA > 0)
             {
-                stream.Position = (long)OffsetFromRVA(exportDirectoryTable.NamePointerRVA);
+                stream.Position = (long)Offset.FromRVA(exportDirectoryTable.NamePointerRVA);
                 EXPORT_NAME_TABLE_ENTRY[] exportNameTableEntries = reader.ReadArray<EXPORT_NAME_TABLE_ENTRY>((int)exportDirectoryTable.NumberofNamePointers);
                 for (int i = 0; i < exportDirectoryTable.NumberofNamePointers; i++)
                 {
                     
-                    var section = GetSectionByRVA(exportNameTableEntries[i].NameRVA);
+                    var section = Section.ByRVA(exportNameTableEntries[i].NameRVA);
                     var section_name = System.Text.Encoding.UTF8.GetString(section.Name);
                     //exportNameTableEntries[i].DumpToConsole();
-                    stream.Position = (long)OffsetFromRVA(exportNameTableEntries[i].NameRVA);
+                    stream.Position = (long)Offset.FromRVA(exportNameTableEntries[i].NameRVA);
                     //reader.ReadString();
                     
                     //Byte[] ExportName = reader.ReadArray<Byte>(17);
@@ -515,7 +469,7 @@ namespace il2cpp_sdk_generator
             }
 
             // Read Table
-            stream.Position = (long)OffsetFromRVA(dataDirectory.RelativeVirtualAddress);
+            stream.Position = (long)Offset.FromRVA(dataDirectory.RelativeVirtualAddress);
 
             IMPORT_DIRECTORY_TABLE_ENTRY[] importDirectoryTables = reader.ReadArray<IMPORT_DIRECTORY_TABLE_ENTRY>((int)dataDirectory.Size / typeof(IMPORT_DIRECTORY_TABLE_ENTRY).GetSizeOf());
             foreach(var importDirectoryTable in importDirectoryTables)
@@ -523,9 +477,9 @@ namespace il2cpp_sdk_generator
                 //importDirectoryTable.DumpToConsole();
                 if (importDirectoryTable.ImportLookupTableRVA == 0)
                     continue;
-                stream.Position = (long)OffsetFromRVA(importDirectoryTable.NameRVA);
+                stream.Position = (long)Offset.FromRVA(importDirectoryTable.NameRVA);
                 Console.WriteLine($"DLL: {reader.ReadNullTerminatedString()}");
-                stream.Position = (long)OffsetFromRVA(importDirectoryTable.ImportLookupTableRVA);
+                stream.Position = (long)Offset.FromRVA(importDirectoryTable.ImportLookupTableRVA);
                 List<IMPORT_LOOKUP_TABLE_ENTRY> importLookupTableList = new List<IMPORT_LOOKUP_TABLE_ENTRY>();
                 IMPORT_LOOKUP_TABLE_ENTRY importLookupTableEntry = reader.Read<IMPORT_LOOKUP_TABLE_ENTRY>();
                 while (importLookupTableEntry.Ordinal_NameFlag != 0 || importLookupTableEntry.OrdinalNumber != 0 || importLookupTableEntry.Hint_NameTableRVA != 0)
@@ -543,7 +497,7 @@ namespace il2cpp_sdk_generator
                 {
                     if (!PortableExecutable.importLookupTableEntries[i].ImportByOrdinal)
                     {
-                        stream.Position = (long)OffsetFromRVA(PortableExecutable.importLookupTableEntries[i].Hint_NameTableRVA);
+                        stream.Position = (long)Offset.FromRVA(PortableExecutable.importLookupTableEntries[i].Hint_NameTableRVA);
                         PortableExecutable.hintNameTableEntries[i] = reader.Read<HINT_NAME_TABLE_ENTRY>();
                         //PortableExecutable.hintNameTableEntries[i].DumpToConsole();
                         Console.WriteLine($" {PortableExecutable.hintNameTableEntries[i].Name}");

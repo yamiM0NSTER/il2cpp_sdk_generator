@@ -37,6 +37,7 @@ namespace il2cpp_sdk_generator
 
             il2cppReader.Init(memStream);
             il2cppReader.Read();
+            il2cppReader.Process();
 
             Console.ReadLine();
         }
