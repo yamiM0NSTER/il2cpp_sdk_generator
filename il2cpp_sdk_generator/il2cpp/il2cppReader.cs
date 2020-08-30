@@ -30,7 +30,67 @@ namespace il2cpp_sdk_generator
 
         public static void Process()
         {
+            // TODO: Trusted references
+            return;
 
+            int CntBefore = CodeScanner.funcPtrs.Count;
+            for (int i =0;i< il2cpp.methodPointers.Length;i++)
+            {
+                if (il2cpp.methodPointers[i] == 0)
+                    continue;
+
+                if (CodeScanner.funcPtrs.Contains(il2cpp.methodPointers[i]))
+                    continue;
+
+                CodeScanner.funcPtrs.Add(il2cpp.methodPointers[i]);
+                Console.WriteLine($"[0x{il2cpp.methodPointers[i]:X8}]");
+            }
+            for (int i = 0; i < il2cpp.reversePInvokeWrappers.Length; i++)
+            {
+                if (il2cpp.reversePInvokeWrappers[i] == 0)
+                    continue;
+
+                if (CodeScanner.funcPtrs.Contains(il2cpp.reversePInvokeWrappers[i]))
+                    continue;
+
+                CodeScanner.funcPtrs.Add(il2cpp.reversePInvokeWrappers[i]);
+            }
+            for (int i = 0; i < il2cpp.genericMethodPointers.Length; i++)
+            {
+                if (il2cpp.genericMethodPointers[i] == 0)
+                    continue;
+
+                if (CodeScanner.funcPtrs.Contains(il2cpp.genericMethodPointers[i]))
+                    continue;
+
+                CodeScanner.funcPtrs.Add(il2cpp.genericMethodPointers[i]);
+            }
+            for (int i = 0; i < il2cpp.invokerPointers.Length; i++)
+            {
+                if (il2cpp.invokerPointers[i] == 0)
+                    continue;
+
+                if (CodeScanner.funcPtrs.Contains(il2cpp.invokerPointers[i]))
+                    continue;
+
+                CodeScanner.funcPtrs.Add(il2cpp.invokerPointers[i]);
+            }
+            for (int i = 0; i < il2cpp.unresolvedVirtualCallPointers.Length; i++)
+            {
+                if (il2cpp.unresolvedVirtualCallPointers[i] == 0)
+                    continue;
+
+                if (CodeScanner.funcPtrs.Contains(il2cpp.unresolvedVirtualCallPointers[i]))
+                    continue;
+
+                CodeScanner.funcPtrs.Add(il2cpp.unresolvedVirtualCallPointers[i]);
+            }
+            
+            Console.WriteLine($"il2cppReader::Process() before funcPtrs[{CntBefore}]");
+            Console.WriteLine($"il2cppReader::Process() funcPtrs[{CodeScanner.funcPtrs.Count}]");
+            CodeScanner.funcPtrs.Sort();
+            Console.WriteLine($"[0x{CodeScanner.funcPtrs[0]:X8}]");
+            Console.WriteLine($"[0x{CodeScanner.funcPtrs[CodeScanner.funcPtrs.Count - 1]:X8}]");
         }
 
         private static void ReadMetadataRegistration()

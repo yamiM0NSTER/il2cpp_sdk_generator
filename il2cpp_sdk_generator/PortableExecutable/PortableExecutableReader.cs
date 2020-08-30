@@ -43,6 +43,7 @@ namespace il2cpp_sdk_generator
 
             PortableExecutable.imageFileHeader = reader.Read<IMAGE_FILE_HEADER>();
             PortableExecutable.imageFileHeader.DumpToConsole();
+
             //
             if (PortableExecutable.imageFileHeader.Machine == PE_Constants.IMAGE_FILE_MACHINE_AMD64)
             {
@@ -62,6 +63,7 @@ namespace il2cpp_sdk_generator
                 stream.Position = posBeforeimageOptionalHeader64 + PE_Constants.IMAGE_OPTIONAL_HEADER64_DATA_DICTIONARY64_OFFSET + PortableExecutable.imageOptionalHeader64.NumberOfRvaAndSizes * typeof(IMAGE_DATA_DIRECTORY).GetSizeOf();
             }
 
+            Console.WriteLine($"ImageBase: 0x{PortableExecutable.imageOptionalHeader64.ImageBase:X8}");
             PortableExecutable.imageSectionHeaders = reader.ReadArray<IMAGE_SECTION_HEADER>(PortableExecutable.imageFileHeader.NumberOfSections);
             foreach(var section in PortableExecutable.imageSectionHeaders)
             {
@@ -69,6 +71,8 @@ namespace il2cpp_sdk_generator
 
                 Console.WriteLine($"Section name: {System.Text.Encoding.UTF8.GetString(section.Name)} [{System.Text.Encoding.UTF8.GetString(section.Name).TrimEnd('\0').Length}]");
                 section.DumpToConsole();
+                Console.WriteLine($"Section RVA VirtualAddress: 0x{section.VirtualAddress:X8}");
+                Console.WriteLine($"Section VirtualAddress+VirtualSize: 0x{section.VirtualAddress+section.Misc.VirtualSize:X8}");
                 Console.WriteLine($"Section characteristics: {section.Characteristics:X4}");
 
                 //if ((section.Characteristics & PE_Constants.CHARACTERISTICS_DATA_MASK) == PE_Constants.CHARACTERISTICS_DATA_MASK)
@@ -78,10 +82,22 @@ namespace il2cpp_sdk_generator
                     dataSections.Add(section);
                 else if ((section.Characteristics & PE_Constants.CHARACTERISTICS_CODE_MASK) == PE_Constants.CHARACTERISTICS_CODE_MASK)
                     codeSections.Add(section);
+
+                // TODO: COMDAT data if present
+                if ((section.Characteristics & PE_Constants.IMAGE_SCN_LNK_COMDAT) == PE_Constants.IMAGE_SCN_LNK_COMDAT)
+                    Console.WriteLine("COMDAT FOUND");
+            }
+
+            // TODO: If symbol table exists try to read what is there, maybe useful
+            // COFF Symbol table
+            if(PortableExecutable.imageFileHeader.PointerToSymbolTable != 0)
+            {
+
             }
 
             ReadExportDirectory();
             ReadImportDirectory();
+            ReadExceptionDirectory();
 
             Console.WriteLine($"dataSections.Count: {dataSections.Count}");
             Console.WriteLine($"codeSections.Count: {codeSections.Count}");
@@ -90,26 +106,30 @@ namespace il2cpp_sdk_generator
         // Here we process whatever can be processed for later use
         public void Process()
         {
-            // TODO: move these results to il2cpp storage class?
-            UInt64 CodeRegistrationAddress = 0;
-            UInt64 MetadataRegistrationAddress = 0;
-            if (FindRegistrationByPattern(ref CodeRegistrationAddress, ref MetadataRegistrationAddress))
+            if (FindRegistrationByPattern(ref il2cpp.CodeRegistrationAddress, ref il2cpp.MetadataRegistrationAddress))
             {
                 Console.WriteLine("Managed to find Registrations by pattern");
-                Console.WriteLine($"MetadataRegistrationAddress: 0x{MetadataRegistrationAddress:X}");
-                Console.WriteLine($"CodeRegistrationAddress: 0x{CodeRegistrationAddress:X}");
+                Console.WriteLine($"MetadataRegistrationAddress: 0x{il2cpp.MetadataRegistrationAddress:X}");
+                Console.WriteLine($"CodeRegistrationAddress: 0x{il2cpp.CodeRegistrationAddress:X}");
             }
-            else if (FindRegistrationbyStructs(ref CodeRegistrationAddress, ref MetadataRegistrationAddress))
+            else if (FindRegistrationbyStructs(ref il2cpp.CodeRegistrationAddress, ref il2cpp.MetadataRegistrationAddress))
             {
                 Console.WriteLine("Fall back to searching Registrations by structures");
-                Console.WriteLine($"MetadataRegistrationAddress: 0x{MetadataRegistrationAddress:X}");
-                Console.WriteLine($"CodeRegistrationAddress: 0x{CodeRegistrationAddress:X}");
+                Console.WriteLine($"MetadataRegistrationAddress: 0x{il2cpp.MetadataRegistrationAddress:X}");
+                Console.WriteLine($"CodeRegistrationAddress: 0x{il2cpp.CodeRegistrationAddress:X}");
             }
             else
             {
                 Console.WriteLine("Failed to find Registrations");
-                CodeRegistrationAddress = 0;
-                MetadataRegistrationAddress = 0;
+                il2cpp.CodeRegistrationAddress = 0;
+                il2cpp.MetadataRegistrationAddress = 0;
+            }
+
+            // TODO: Trusted references
+            return;
+            for (int i = 0; i < PortableExecutable.exceptionTableEntries.Length; i++)
+            {
+                CodeScanner.funcPtrs.Add(VA.FromRVA(PortableExecutable.exceptionTableEntries[i].BeginAddress));
             }
         }
         // Function code exists when using Visual Studio when making x64 build
@@ -358,19 +378,6 @@ namespace il2cpp_sdk_generator
 
             return 0;
         }
-
-
-        // Proper
-        
-
-        
-
-        
-
-        
-
-        
-
         
 
         public void ReadExportDirectory()
@@ -508,68 +515,32 @@ namespace il2cpp_sdk_generator
                     }
                 }
             }
-            //IMPORT_DIRECTORY_TABLE importDirectoryTable = reader.Read<IMPORT_DIRECTORY_TABLE>();
+        }
 
+        public void ReadExceptionDirectory()
+        {
+            if (PortableExecutable.imageOptionalHeader64.NumberOfRvaAndSizes < PE_Constants.IMAGE_DIRECTORY_ENTRY_EXCEPTION + 1)
+            {
+                Console.WriteLine($"Exception Directory over declared entries!");
+                return;
+            }
 
+            IMAGE_DATA_DIRECTORY dataDirectory = PortableExecutable.imageOptionalHeader64.DataDirectory[PE_Constants.IMAGE_DIRECTORY_ENTRY_EXCEPTION];
+            if (dataDirectory.RelativeVirtualAddress == 0)
+            {
+                Console.WriteLine($"Exception Directory empty.");
+                return;
+            }
 
-            //stream.Position = OffsetFromRVA(exportDirectoryTable.NameRVA);
-            //// NULL-terminated string
-            //// TODO: Read string till null function
-            //Console.WriteLine($"exportDirectoryTable name from RVA: {reader.ReadNullTerminatedString()}");
+            // Read Table
+            stream.Position = (long)Offset.FromRVA(dataDirectory.RelativeVirtualAddress);
 
-            ////Byte[] name = reader.ReadArray<Byte>(17);
-            ////Console.WriteLine($"exportDirectoryTable name from RVA: {System.Text.Encoding.UTF8.GetString(name)}");
-
-            //if (exportDirectoryTable.AddressTableEntries != exportDirectoryTable.NumberofNamePointers)
+            PortableExecutable.exceptionTableEntries = reader.ReadArray<RUNTIME_FUNCTION>((int)dataDirectory.Size / typeof(RUNTIME_FUNCTION).GetSizeOf());
+            Console.WriteLine($"PortableExecutable.exceptionTableEntries[{PortableExecutable.exceptionTableEntries.Length}]");
+            //foreach (var entry in PortableExecutable.exceptionTableEntries)
             //{
-            //    // Skip if number of functions doesn't equal nuumber of names until ordinal table is prepared.
-            //    return;
+            //    Console.WriteLine($"[0x{VA.FromRVA(entry.BeginAddress):X8}]");
             //}
-            //// Read Export Address Table
-            //if (exportDirectoryTable.ExportAddressTableRVA > 0)
-            //{
-            //    stream.Position = OffsetFromRVA(exportDirectoryTable.ExportAddressTableRVA);
-            //    EXPORT_ADDRESS_TABLE_ENTRY[] exportAddressTableEntries = reader.ReadArray<EXPORT_ADDRESS_TABLE_ENTRY>((int)exportDirectoryTable.AddressTableEntries);
-            //    for (int i = 0; i < exportDirectoryTable.AddressTableEntries; i++)
-            //    {
-            //        var section = GetSectionByRVA(exportAddressTableEntries[i].ExportRVA);
-            //        var section_name = System.Text.Encoding.UTF8.GetString(section.Name);
-            //        // Exports are external
-            //        if (!section_name.StartsWith(".text"))
-            //        {
-            //            exportAddressTableEntries[i].DumpToConsole();
-            //            Console.WriteLine($"Section name: {section_name}");
-            //        }
-            //        // else all are within PE
-            //    }
-            //}
-
-            //// Read Export names
-            //if (exportDirectoryTable.NamePointerRVA > 0)
-            //{
-            //    stream.Position = OffsetFromRVA(exportDirectoryTable.NamePointerRVA);
-            //    EXPORT_NAME_TABLE_ENTRY[] exportNameTableEntries = reader.ReadArray<EXPORT_NAME_TABLE_ENTRY>((int)exportDirectoryTable.NumberofNamePointers);
-            //    for (int i = 0; i < exportDirectoryTable.NumberofNamePointers; i++)
-            //    {
-
-            //        var section = GetSectionByRVA(exportNameTableEntries[i].NameRVA);
-            //        var section_name = System.Text.Encoding.UTF8.GetString(section.Name);
-            //        //exportNameTableEntries[i].DumpToConsole();
-            //        stream.Position = OffsetFromRVA(exportNameTableEntries[i].NameRVA);
-            //        //reader.ReadString();
-
-            //        //Byte[] ExportName = reader.ReadArray<Byte>(17);
-            //        Console.WriteLine($"Export name from RVA: {reader.ReadNullTerminatedString()}");
-            //        //Console.WriteLine($"Section name: {section_name}");
-            //        //stream.Position = OffsetFromRVA(exportDirectoryTable.NamePointerRVA);
-
-            //    }
-            //}
-
-            //// Skip Ordinal Table for now.
-
-
-            //// TODO: Combine and store? Maybe by Ordinal index?
         }
     }
 }

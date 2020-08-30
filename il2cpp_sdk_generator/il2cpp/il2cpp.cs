@@ -8,6 +8,7 @@ namespace il2cpp_sdk_generator
     class il2cpp
     {
         // Code Registration
+        public static ulong CodeRegistrationAddress;
         public static Il2CppCodeRegistration64 codeRegistration64 = null;
         public static ulong[] methodPointers; // VA's
         public static ulong[] reversePInvokeWrappers; // VA's
@@ -19,6 +20,7 @@ namespace il2cpp_sdk_generator
         public static ulong[] windowsRuntimeFactoryTable; // VA's
 
         // Metadata Registration
+        public static ulong MetadataRegistrationAddress;
         public static Il2CppMetadataRegistration64 metadataRegistration64 = null;
         public static ulong[] genericClassesPtrs;
         public static Il2CppGenericClass[] genericClasses;

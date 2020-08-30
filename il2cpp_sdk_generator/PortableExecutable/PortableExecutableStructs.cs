@@ -354,6 +354,7 @@ namespace il2cpp_sdk_generator
         /// </summary>
         public PhysAddrVirtSize Misc;
         /// <summary>
+        /// RVA
         /// The address of the first byte of the section when loaded into memory, relative to the image base. For object files, this is the address of the first byte before relocation is applied.
         /// </summary>
         public DWORD VirtualAddress;
@@ -539,6 +540,26 @@ namespace il2cpp_sdk_generator
         public string Name;
     }
 
+    /// <summary>
+    /// Table-based exception handling requires a table entry for all functions that allocate stack space or call another function (for example, nonleaf functions). Function table entries have the format:
+    /// </summary>
+    class RUNTIME_FUNCTION
+    {
+        /// <summary>
+        /// The RVA of the corresponding function.
+        /// </summary>
+        public ULONG BeginAddress;
+        /// <summary>
+        /// The RVA of the end of the function.
+        /// </summary>
+        public ULONG EndAddress;
+        /// <summary>
+        /// The RVA of the unwind information.
+        /// </summary>
+        public ULONG UnwindInformation;
+    }
+
+
 
     static class PE_Constants
     {
@@ -614,7 +635,12 @@ namespace il2cpp_sdk_generator
         /// The section contains initialized data.
         /// </summary>
         public const DWORD IMAGE_SCN_CNT_INITIALIZED_DATA = 0x00000040;
-    
+
+        /// <summary>
+        /// The section contains COMDAT data. For more information, see COMDAT Sections (Object Only). This is valid only for object files. 
+        /// </summary>
+        public const DWORD IMAGE_SCN_LNK_COMDAT = 0x00001000;
+
         /// <summary>
         /// The section can be executed as code.
         /// </summary>
