@@ -97,7 +97,6 @@ namespace il2cpp_sdk_generator
             foreach (var image in Metadata.imageDefinitions)
             {
                 var resolvedImage = ResolveImage(image);
-                Console.WriteLine($"Image: {GetString(image.nameIndex)}x");
                 Metadata.resolvedImages.Add(resolvedImage);
             }
             Console.WriteLine();
@@ -120,7 +119,17 @@ namespace il2cpp_sdk_generator
                 if (resolvedType.isNested)
                     continue;
 
-                if(resolvedImage.Name == "Assembly-CSharp.dll")
+                if (!resolvedImage.Namespaces.TryGetValue(resolvedType.Namespace, out var resolvedNamespace))
+                {
+                    resolvedNamespace = new ResolvedNamespace();
+                    resolvedNamespace.Name = resolvedType.Namespace;
+                    resolvedImage.Namespaces.Add(resolvedType.Namespace, resolvedNamespace);
+                }
+
+                // TODO: depending on type put to correct var. enums, classes/structs?
+                resolvedNamespace.Types.Add(resolvedType);
+
+                if (resolvedImage.Name == "Assembly-CSharp.dll")
                 {
                     resolvedType.DumpToConsole();
                     foreach(var nestedType in resolvedType.nestedTypes)
@@ -129,6 +138,19 @@ namespace il2cpp_sdk_generator
                     }
                 }
             }
+
+            //Console.WriteLine($"Image: {resolvedImage.Name}");
+            //Console.WriteLine($"Namespaces: {resolvedImage.Namespaces.Count}");
+            //foreach (var pair in resolvedImage.Namespaces)
+            //{
+            //    Console.WriteLine($" {pair.Value.Name}: {pair.Value.Types.Count}");
+            //    for(int i = 0;i< pair.Value.Types.Count;i++)
+            //    {
+            //        Console.WriteLine($"  {pair.Value.Types[i].Name}");
+            //    }
+            //    //resolvedImage.Namespaces.
+            //}
+            
 
             return resolvedImage;
         }
