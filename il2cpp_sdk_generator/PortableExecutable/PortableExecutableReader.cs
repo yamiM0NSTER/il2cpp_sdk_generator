@@ -127,9 +127,9 @@ namespace il2cpp_sdk_generator
 
             // TODO: Trusted references
             return;
-            for (int i = 0; i < PortableExecutable.exceptionTableEntries.Length; i++)
+            for (int i = 0; i < PortableExecutable.runtimeFunctions.Length; i++)
             {
-                CodeScanner.funcPtrs.Add(VA.FromRVA(PortableExecutable.exceptionTableEntries[i].BeginAddress));
+                CodeScanner.funcPtrs.Add(VA.FromRVA(PortableExecutable.runtimeFunctions[i].BeginAddress));
             }
         }
         // Function code exists when using Visual Studio when making x64 build
@@ -535,8 +535,8 @@ namespace il2cpp_sdk_generator
             // Read Table
             stream.Position = (long)Offset.FromRVA(dataDirectory.RelativeVirtualAddress);
 
-            PortableExecutable.exceptionTableEntries = reader.ReadArray<RUNTIME_FUNCTION>((int)dataDirectory.Size / typeof(RUNTIME_FUNCTION).GetSizeOf());
-            Console.WriteLine($"PortableExecutable.exceptionTableEntries[{PortableExecutable.exceptionTableEntries.Length}]");
+            PortableExecutable.runtimeFunctions = reader.ReadArray<RUNTIME_FUNCTION>((int)dataDirectory.Size / typeof(RUNTIME_FUNCTION).GetSizeOf());
+            Console.WriteLine($"PortableExecutable.runtimeFunctions[{PortableExecutable.runtimeFunctions.Length}]");
             //foreach (var entry in PortableExecutable.exceptionTableEntries)
             //{
             //    Console.WriteLine($"[0x{VA.FromRVA(entry.BeginAddress):X8}]");

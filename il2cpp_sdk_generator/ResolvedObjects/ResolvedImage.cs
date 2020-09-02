@@ -5,9 +5,8 @@ using System.Text;
 
 namespace il2cpp_sdk_generator
 {
-    class ResolvedAssembly : ResolvedObject
+    class ResolvedImage : ResolvedObject
     {
-        public string Name;
 
     }
 }

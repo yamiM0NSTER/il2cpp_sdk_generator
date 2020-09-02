@@ -7,6 +7,6 @@ namespace il2cpp_sdk_generator
 {
     class ResolvedObject
     {
-
+        public string Name = null;
     }
 }

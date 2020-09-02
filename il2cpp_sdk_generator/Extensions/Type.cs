@@ -45,6 +45,10 @@ namespace il2cpp_sdk_generator
         public static int GetSizeOf(this Type instance)
         {
             // TODO: maybe cache?
+
+            if(instance.IsPrimitive)
+                return GetPrimitiveSizeOf(instance);
+
             int nSize = 0;
             foreach (FieldInfo fieldInfo in instance.GetFields())
             {

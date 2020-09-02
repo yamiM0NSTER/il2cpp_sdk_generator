@@ -64,9 +64,10 @@
     <Compile Include="PortableExecutable\PortableExecutableStructs.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ResolvedObjects\ResolvedAssembly.cs" />
+    <Compile Include="ResolvedObjects\ResolvedImage.cs" />
     <Compile Include="ResolvedObjects\ResolvedNamespace.cs" />
     <Compile Include="ResolvedObjects\ResolvedObject.cs" />
+    <Compile Include="ResolvedObjects\ResolvedType.cs" />
     <Compile Include="Utils\ArrayBuilder.cs" />
     <Compile Include="Utils\BinaryPattern.cs" />
     <Compile Include="Utils\Offsets.cs" />

@@ -12,7 +12,10 @@ namespace il2cpp_sdk_generator
         {
             ResetDirectory();
 
-
+            for(int i =0;i<Metadata.resolvedImages.Count;i++)
+            {
+                Directory.CreateDirectory(Metadata.resolvedImages[i].Name);
+            }
         }
 
 

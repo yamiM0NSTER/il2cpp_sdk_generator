@@ -20,7 +20,7 @@ namespace il2cpp_sdk_generator
 
 
         // Exception 
-        public static RUNTIME_FUNCTION[] exceptionTableEntries;
+        public static RUNTIME_FUNCTION[] runtimeFunctions;
 
         // Processed data
         public static Dictionary<string, IMAGE_SECTION_HEADER> m_mapSections = new Dictionary<string, IMAGE_SECTION_HEADER>();

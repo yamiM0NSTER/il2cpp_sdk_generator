@@ -51,5 +51,8 @@ namespace il2cpp_sdk_generator
         // exportedTypeDefinitions // TypeDefinitionIndex
 
         // Processed data
+        public static List<ResolvedImage> resolvedImages = new List<ResolvedImage>();
+        public static ResolvedType[] resolvedTypes = null;
+        public static List<ResolvedType> nestedTypes = new List<ResolvedType>();
     }
 }

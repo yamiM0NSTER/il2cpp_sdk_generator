@@ -92,7 +92,78 @@ namespace il2cpp_sdk_generator
         // Here we process whatever can be processed for later use
         public void Process()
         {
+            ResolveTypes();
 
+            foreach (var image in Metadata.imageDefinitions)
+            {
+                var resolvedImage = ResolveImage(image);
+                Console.WriteLine($"Image: {GetString(image.nameIndex)}x");
+                Metadata.resolvedImages.Add(resolvedImage);
+            }
+            Console.WriteLine();
+        }
+
+        public string GetString(Int32 idx)
+        {
+            stream.Position = Metadata.header.stringOffset + idx;
+            return reader.ReadNullTerminatedString();
+        }
+
+        public ResolvedImage ResolveImage(Il2CppImageDefinition image)
+        {
+            ResolvedImage resolvedImage = new ResolvedImage();
+            resolvedImage.Name = GetString(image.nameIndex);
+
+            for(int i = image.typeStart; i< image.typeStart+image.typeCount;i++)
+            {
+                var resolvedType = Metadata.resolvedTypes[i];
+                if (resolvedType.isNested)
+                    continue;
+
+                if(resolvedImage.Name == "Assembly-CSharp.dll")
+                {
+                    resolvedType.DumpToConsole();
+                    foreach(var nestedType in resolvedType.nestedTypes)
+                    {
+                        nestedType.DumpToConsole(2);
+                    }
+                }
+            }
+
+            return resolvedImage;
+        }
+
+        public void ResolveTypes()
+        {
+            Metadata.resolvedTypes = new ResolvedType[Metadata.typeDefinitions.Length];
+            for(int i=0;i< Metadata.typeDefinitions.Length;i++)
+            {
+                ResolveType(i);
+            }
+        }
+
+        public ResolvedType ResolveType(Int32 typeIdx)
+        {
+            if (Metadata.resolvedTypes[typeIdx] != null)
+                return Metadata.resolvedTypes[typeIdx];
+
+            var typeDef = Metadata.typeDefinitions[typeIdx];
+            // TODO: Resolved class, struct, enum
+            ResolvedType resolvedType = new ResolvedType(typeDef);
+            resolvedType.Name = GetString(typeDef.nameIndex);
+            resolvedType.Namespace = GetString(typeDef.namespaceIndex);
+
+            for(int i =0;i<typeDef.nested_type_count;i++)
+            {
+                Int32 nestedTypeIndex = Metadata.nestedTypeIndices[typeDef.nestedTypesStart + i];
+                resolvedType.nestedTypes.Add(ResolveType(nestedTypeIndex));
+            }
+
+            Metadata.resolvedTypes[typeIdx] = resolvedType;
+            if (resolvedType.isNested)
+                Metadata.nestedTypes.Add(resolvedType);
+
+            return resolvedType;
         }
     }
 }
