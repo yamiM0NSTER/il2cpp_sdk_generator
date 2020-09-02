@@ -7,6 +7,7 @@ namespace il2cpp_sdk_generator
 {
     class ResolvedImage : ResolvedObject
     {
+        
 
     }
 }
