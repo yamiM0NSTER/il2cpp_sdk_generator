@@ -28,6 +28,5 @@ namespace il2cpp_sdk_generator
 
             return true;
         }
-
     }
 }
