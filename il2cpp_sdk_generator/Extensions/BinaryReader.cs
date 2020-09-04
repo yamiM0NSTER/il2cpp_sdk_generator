@@ -144,6 +144,7 @@ namespace il2cpp_sdk_generator
         }
 
         // signed
+        static Type sbyte_t = typeof(System.SByte);
         static Type int16_t = typeof(System.Int16);
         static Type int32_t = typeof(System.Int32);
         static Type int64_t = typeof(System.Int64);
@@ -156,6 +157,8 @@ namespace il2cpp_sdk_generator
         public static object ReadPrimitive(this BinaryReader reader, Type t)
         {
             // TODO: figure out non-ifology solution
+            if (t == sbyte_t)
+                return reader.ReadSByte();
             if (t == int16_t)
                 return reader.ReadInt16();
             if(t == int32_t)

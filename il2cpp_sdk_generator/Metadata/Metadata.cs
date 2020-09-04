@@ -42,7 +42,7 @@ namespace il2cpp_sdk_generator
         public static Il2CppMetadataUsageList[] metadataUsageLists;
         public static Il2CppMetadataUsagePair[] metadataUsagePairs;
         public static Il2CppFieldRef[] fieldReferences;
-        public static int32_t[] referencedAssemblies; // int32_t
+        public static Int32[] referencedAssemblies; // int32_t
         public static Il2CppCustomAttributeTypeRange[] attributeTypeRanges;
         public static TypeIndex[] attributeTypes; // TypeIndex
         public static TypeIndex[] unresolvedVirtualCallParameterTypes; // TypeIndex
@@ -51,6 +51,9 @@ namespace il2cpp_sdk_generator
         // exportedTypeDefinitions // TypeDefinitionIndex
 
         // Processed data
+        public static Dictionary<Int32, Il2CppFieldDefaultValue> mapFieldDefValues = new Dictionary<Int32, Il2CppFieldDefaultValue>();
+
+
         public static List<ResolvedImage> resolvedImages = new List<ResolvedImage>();
         public static ResolvedType[] resolvedTypes = null;
         public static List<ResolvedType> nestedTypes = new List<ResolvedType>();

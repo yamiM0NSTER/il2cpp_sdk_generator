@@ -65,6 +65,7 @@
     <Compile Include="PortableExecutable\PortableExecutableStructs.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ResolvedObjects\ResolvedEnum.cs" />
     <Compile Include="ResolvedObjects\ResolvedImage.cs" />
     <Compile Include="ResolvedObjects\ResolvedNamespace.cs" />
     <Compile Include="ResolvedObjects\ResolvedObject.cs" />

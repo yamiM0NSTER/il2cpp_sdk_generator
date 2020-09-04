@@ -37,7 +37,7 @@ using AssemblyIndex = System.Int32;
 using InteropDataIndex = System.Int32;
 using EncodedMethodIndex = System.UInt32;
 using size_t = System.UInt64;
-
+using System.Reflection;
 
 namespace il2cpp_sdk_generator
 {
@@ -166,7 +166,7 @@ namespace il2cpp_sdk_generator
         public uint16_t vtable_count;
         public uint16_t interfaces_count;
         public uint16_t interface_offsets_count;
-
+        
         // bitfield to portably encode boolean values as single bits
         // 01 - valuetype;
         // 02 - enumtype;
@@ -177,6 +177,22 @@ namespace il2cpp_sdk_generator
         // 07-10 - One of nine possible PackingSize values (0, 1, 2, 4, 8, 16, 32, 64, or 128)
         public uint32_t bitfield;
         public uint32_t token;
+
+        public bool isValueType
+        {
+            get
+            {
+                return (bitfield & 0b1) != 0;
+            }
+        }
+
+        public bool isEnum
+        {
+            get
+            {
+                return (bitfield & 0b10) != 0;
+            }
+        }
     }
 
     class Il2CppMethodDefinition
@@ -345,8 +361,7 @@ namespace il2cpp_sdk_generator
         [ArraySize(Metadata_Constants.PUBLIC_KEY_BYTE_LENGTH)]
         public uint8_t[] public_key_token;
     }
-
-
+    
     class Il2CppAssemblyDefinition
     {
         public ImageIndex imageIndex;

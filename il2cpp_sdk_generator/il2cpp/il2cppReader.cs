@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Reflection;
 
 namespace il2cpp_sdk_generator
 {
@@ -30,6 +31,48 @@ namespace il2cpp_sdk_generator
 
         public static void Process()
         {
+            // Second pass to avoid stack overflow
+            for (int i = 0; i < Metadata.typeDefinitions.Length; i++)
+            {
+                if (Metadata.typeDefinitions[i].parentIndex == -1)
+                    continue;
+
+                var type = il2cpp.types[Metadata.typeDefinitions[i].parentIndex];
+                if(type.type == Il2CppTypeEnum.IL2CPP_TYPE_VALUETYPE || type.type == Il2CppTypeEnum.IL2CPP_TYPE_CLASS)
+                {
+                    if (type.data.klassIndex == i)
+                        continue;
+                    Metadata.resolvedTypes[i].parentType = MetadataReader.ResolveType(type.data.klassIndex);
+                }
+            }
+            // Resolve enums
+            for (int i = 0; i < Metadata.typeDefinitions.Length; i++)
+            {
+                if (!Metadata.typeDefinitions[i].isEnum)
+                    continue;
+
+                ResolvedEnum resolvedEnum = (ResolvedEnum)Metadata.resolvedTypes[i];
+
+                // Resolve enum
+                for (int k = 0; k < Metadata.typeDefinitions[i].field_count; k++)
+                {
+                    var fieldDef = Metadata.fieldDefinitions[k+ Metadata.typeDefinitions[i].fieldStart];
+                    var type = il2cpp.types[fieldDef.typeIndex];
+                    if((type.attrs & il2cpp_Constants.FIELD_ATTRIBUTE_STATIC) != 0)
+                    {
+                        MetadataReader.GetDefaultFieldValue(k + Metadata.typeDefinitions[i].fieldStart, out var val);
+                        //Console.WriteLine($"{MetadataReader.GetString(fieldDef.nameIndex)} = {val}");
+                        resolvedEnum.values.Add(MetadataReader.GetString(fieldDef.nameIndex), val);
+                        //values
+                    }
+                    //type.DumpToConsole();
+                }
+
+                Console.WriteLine(resolvedEnum.ToCode(2));
+
+                //   Metadata.resolvedTypes[i].parentType = ResolveType(Metadata.typeDefinitions[i].parentIndex);
+            }
+
             // TODO: Trusted references
             return;
 

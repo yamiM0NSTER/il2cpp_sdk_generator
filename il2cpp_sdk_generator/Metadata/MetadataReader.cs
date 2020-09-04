@@ -13,8 +13,8 @@ namespace il2cpp_sdk_generator
 {
     class MetadataReader
     {
-        private BinaryReader reader;
-        private MemoryStream stream;
+        private static BinaryReader reader;
+        private static MemoryStream stream;
 
         public MetadataReader(MemoryStream memoryStream)
         {
@@ -94,6 +94,11 @@ namespace il2cpp_sdk_generator
         {
             ResolveTypes();
 
+            for(int i =0; i < Metadata.fieldDefaultValues.Length;i++)
+            {
+                Metadata.mapFieldDefValues.Add(Metadata.fieldDefaultValues[i].fieldIndex, Metadata.fieldDefaultValues[i]);
+            }
+
             foreach (var image in Metadata.imageDefinitions)
             {
                 var resolvedImage = ResolveImage(image);
@@ -102,7 +107,7 @@ namespace il2cpp_sdk_generator
             Console.WriteLine();
         }
 
-        public string GetString(Int32 idx)
+        public static string GetString(Int32 idx)
         {
             stream.Position = Metadata.header.stringOffset + idx;
             return reader.ReadNullTerminatedString();
@@ -129,28 +134,28 @@ namespace il2cpp_sdk_generator
                 // TODO: depending on type put to correct var. enums, classes/structs?
                 resolvedNamespace.Types.Add(resolvedType);
 
-                if (resolvedImage.Name == "Assembly-CSharp.dll")
-                {
-                    resolvedType.DumpToConsole();
-                    foreach(var nestedType in resolvedType.nestedTypes)
-                    {
-                        nestedType.DumpToConsole(2);
-                    }
-                }
+                //if (resolvedImage.Name == "Assembly-CSharp.dll")
+                //{
+                //    resolvedType.DumpToConsole();
+                //    foreach(var nestedType in resolvedType.nestedTypes)
+                //    {
+                //        nestedType.DumpToConsole(2);
+                //    }
+                //}
             }
 
-            //Console.WriteLine($"Image: {resolvedImage.Name}");
-            //Console.WriteLine($"Namespaces: {resolvedImage.Namespaces.Count}");
-            //foreach (var pair in resolvedImage.Namespaces)
-            //{
-            //    Console.WriteLine($" {pair.Value.Name}: {pair.Value.Types.Count}");
-            //    for(int i = 0;i< pair.Value.Types.Count;i++)
-            //    {
-            //        Console.WriteLine($"  {pair.Value.Types[i].Name}");
-            //    }
-            //    //resolvedImage.Namespaces.
-            //}
-            
+            Console.WriteLine($"Image: {resolvedImage.Name}");
+            Console.WriteLine($"Namespaces: {resolvedImage.Namespaces.Count}");
+            foreach (var pair in resolvedImage.Namespaces)
+            {
+                Console.WriteLine($" {pair.Value.Name}: {pair.Value.Types.Count}");
+                for (int i = 0; i < pair.Value.Types.Count; i++)
+                {
+                    Console.WriteLine($"  {pair.Value.Types[i].Name} 0x{pair.Value.Types[i].typeDef.flags:X8}");
+                }
+                //resolvedImage.Namespaces.
+            }
+
 
             return resolvedImage;
         }
@@ -164,28 +169,144 @@ namespace il2cpp_sdk_generator
             }
         }
 
-        public ResolvedType ResolveType(Int32 typeIdx)
+        
+        const uint ClassSemanticsMask = 32;
+
+        public static ResolvedType ResolveType(Int32 typeIdx)
         {
             if (Metadata.resolvedTypes[typeIdx] != null)
                 return Metadata.resolvedTypes[typeIdx];
 
             var typeDef = Metadata.typeDefinitions[typeIdx];
-            // TODO: Resolved class, struct, enum
-            ResolvedType resolvedType = new ResolvedType(typeDef);
-            resolvedType.Name = GetString(typeDef.nameIndex);
-            resolvedType.Namespace = GetString(typeDef.namespaceIndex);
+            
+            ResolvedType resolvedType = null;
+            
+            // TODO: Resolved class, struct, enum, interface
+            resolvedType = new ResolvedType(typeDef);
+            
 
-            for(int i =0;i<typeDef.nested_type_count;i++)
+            for (int i = 0;i<typeDef.nested_type_count;i++)
             {
                 Int32 nestedTypeIndex = Metadata.nestedTypeIndices[typeDef.nestedTypesStart + i];
                 resolvedType.nestedTypes.Add(ResolveType(nestedTypeIndex));
             }
+
+            if (typeDef.isEnum)
+            {
+                resolvedType = new ResolvedEnum(typeDef);
+                // Check fields
+                //for (int i = 0; i < typeDef.field_count; i++)
+                //{
+                //    var fieldDef = Metadata.fieldDefinitions[i + typeDef.fieldStart];
+                //    fieldDef.DumpToConsole();
+                //}
+                //Console.WriteLine($"Prob enum: {resolvedType.Name}");
+            }
+            else
+            {
+                uint flag = typeDef.flags & ClassSemanticsMask;
+                uint Interface = 32;
+                if (flag == Interface)
+                {
+                    // BUT. WHO ASKED ANYWAY?!
+                    Console.WriteLine($"Prob interface: {resolvedType.Name}");
+                }
+                else
+                {
+                    if (typeDef.isValueType)
+                    {
+                        Console.WriteLine($"Prob struct: {resolvedType.Name}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Prob class: {resolvedType.Name}");
+                    }
+                }
+
+            }
+            resolvedType.Name = GetString(typeDef.nameIndex);
+            resolvedType.Namespace = GetString(typeDef.namespaceIndex);
+
 
             Metadata.resolvedTypes[typeIdx] = resolvedType;
             if (resolvedType.isNested)
                 Metadata.nestedTypes.Add(resolvedType);
 
             return resolvedType;
+        }
+
+        // Do it like TryGetValue in Dictionary
+        public static bool GetDefaultFieldValue(Int32 fieldIndex, out object val)
+        {
+            val = null;
+            if(!Metadata.mapFieldDefValues.TryGetValue(fieldIndex, out var il2CppFieldDefaultValue))
+                return false;
+
+            // !!!!!!!!! requires il2cpp to be processed
+            var type = il2cpp.types[il2CppFieldDefaultValue.typeIndex];
+            stream.Position = il2CppFieldDefaultValue.dataIndex + Metadata.header.fieldAndParameterDefaultValueDataOffset;
+            switch(type.type)
+            {
+                case Il2CppTypeEnum.IL2CPP_TYPE_U1:
+                    {
+                        val = reader.Read<byte>();
+                        break;
+                    }
+                case Il2CppTypeEnum.IL2CPP_TYPE_U2:
+                    {
+                        val = reader.Read<UInt16>();
+                        break;
+                    }
+                case Il2CppTypeEnum.IL2CPP_TYPE_U4:
+                    {
+                        val = reader.Read<UInt32>();
+                        break;
+                    }
+                case Il2CppTypeEnum.IL2CPP_TYPE_U8:
+                    {
+                        val = reader.Read<UInt64>();
+                        break;
+                    }
+                case Il2CppTypeEnum.IL2CPP_TYPE_I1:
+                    {
+                        val = reader.Read<SByte>();
+                        break;
+                    }
+                case Il2CppTypeEnum.IL2CPP_TYPE_I2:
+                    {
+                        val = reader.Read<Int16>();
+                        break;
+                    }
+                case Il2CppTypeEnum.IL2CPP_TYPE_I4:
+                    {
+                        val = reader.Read<Int32>();
+                        break;
+                    }
+                case Il2CppTypeEnum.IL2CPP_TYPE_I8:
+                    {
+                        val = reader.Read<Int64>();
+                        break;
+                    }
+                case Il2CppTypeEnum.IL2CPP_TYPE_BOOLEAN:
+                    {
+                        val = reader.Read<Boolean>();
+                        break;
+                    }
+                case Il2CppTypeEnum.IL2CPP_TYPE_STRING:
+                    {
+                        int strlen = reader.Read<Int32>();
+                        val = Encoding.UTF8.GetString(reader.ReadBytes(strlen));
+                        Console.WriteLine($"GetDefaultFieldValue: string => {val}");
+                        break;
+                    }
+                default:
+                    {
+                        Console.WriteLine($"GetDefaultFieldValue: unhandled type => {type.type}");
+                        return false;
+                    }
+            }
+
+            return true;
         }
     }
 }

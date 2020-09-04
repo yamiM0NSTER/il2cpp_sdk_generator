@@ -8,8 +8,9 @@ namespace il2cpp_sdk_generator
 {
     class ResolvedType : ResolvedObject
     {
-        Il2CppTypeDefinition typeDef = null;
+        public Il2CppTypeDefinition typeDef = null;
         public string Namespace = null;
+        public ResolvedType parentType = null;
 
         public List<ResolvedType> nestedTypes = new List<ResolvedType>();
 
@@ -19,6 +20,11 @@ namespace il2cpp_sdk_generator
             {
                 return typeDef.declaringTypeIndex != -1;
             }
+        }
+
+        public ResolvedType()
+        {
+
         }
 
         public ResolvedType(Il2CppTypeDefinition type)

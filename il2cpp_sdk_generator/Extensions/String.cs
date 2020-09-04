@@ -8,7 +8,7 @@ namespace il2cpp_sdk_generator
 {
     static class StringExtensions
     {
-        static string numbers = "0123456789";
+        static string digits = "0123456789";
         static string alphanum = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_";
 
 
@@ -17,7 +17,7 @@ namespace il2cpp_sdk_generator
             if (str.Length == 0)
                 return false;
 
-            if (numbers.Contains(str[0]))
+            if (digits.Contains(str[0]))
                 return false;
 
             for(int i = 1; i< str.Length;i++)
@@ -27,6 +27,11 @@ namespace il2cpp_sdk_generator
             }
 
             return true;
+        }
+
+        public static string Indent(this string str, Int32 indent)
+        {
+            return "".PadLeft(indent) + str;
         }
     }
 }

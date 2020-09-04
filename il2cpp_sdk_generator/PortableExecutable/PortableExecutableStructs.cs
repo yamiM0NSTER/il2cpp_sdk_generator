@@ -511,9 +511,7 @@ namespace il2cpp_sdk_generator
         {
             get
             {
-                if ((Ordinal_NameFlag & 0x8000000000000000) != 0)
-                    return true;
-                return false;
+                return (Ordinal_NameFlag & 0x8000000000000000) != 0;
             }
         }
 
