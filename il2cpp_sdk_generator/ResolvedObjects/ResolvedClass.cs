@@ -8,6 +8,8 @@ namespace il2cpp_sdk_generator
 {
     class ResolvedClass : ResolvedType
     {
+        bool isGeneric = false;
+        string genericTemplate = "";
         List<ResolvedField> instanceFields = new List<ResolvedField>();
         List<ResolvedField> staticFields = new List<ResolvedField>();
         List<ResolvedField> constFields = new List<ResolvedField>();
@@ -16,12 +18,29 @@ namespace il2cpp_sdk_generator
         {
             typeDef = type;
             typeDefinitionIndex = idx;
+
+            
         }
 
         public override void Resolve()
         {
             if (isResolved)
                 return;
+
+            // TODO: Just generate all existing generics as diffferent structs
+            // Resolve generic name
+            if (typeDef.genericContainerIndex >= 0)
+            {
+                isGeneric = true;
+                if (Name.Contains('`'))
+                {
+                    int idx = Name.IndexOf('`');
+                    Name = Name.Remove(idx, Name.Length - idx);
+                }
+
+                MakeGenericTemplate();
+                
+            }
 
             // Resolve fields
             // Resolve static fields
@@ -63,6 +82,9 @@ namespace il2cpp_sdk_generator
             }
 
             code += $"// Class TypeDefinitionIndex: {typeDefinitionIndex}\n".Indent(indent);
+
+            if (typeDef.genericContainerIndex >= 0)
+                code += $"{genericTemplate}\n".Indent(indent);
             code += $"struct {Name}".Indent(indent);
             if (parentType != null)
                 code += $" : {parentType.GetFullName()}";
@@ -82,6 +104,7 @@ namespace il2cpp_sdk_generator
             for(int i =0;i < nestedTypes.Count;i++)
             {
                 code += nestedTypes[i].ToCode(indent+2);
+                code += "\n";
             }
 
             code += "};\n".Indent(indent);
@@ -94,6 +117,21 @@ namespace il2cpp_sdk_generator
             }
 
             return code;
+        }
+
+        private void MakeGenericTemplate()
+        {
+            Il2CppGenericContainer generic_container = Metadata.genericContainers[typeDef.genericContainerIndex];
+
+            genericTemplate = "template <";
+            for (int i = 0; i < generic_container.type_argc; i++)
+            {
+                Il2CppGenericParameter generic_parameter = Metadata.genericParameters[generic_container.genericParameterStart + i];
+                genericTemplate += $"typename {MetadataReader.GetString(generic_parameter.nameIndex)}";
+                if (i < generic_container.type_argc - 1)
+                    genericTemplate += ", ";
+            }
+            genericTemplate += ">";
         }
     }
 }

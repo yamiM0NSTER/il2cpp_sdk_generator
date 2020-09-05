@@ -36,6 +36,10 @@ namespace il2cpp_sdk_generator
         public static Il2CppTypeDefinitionSizes[] typeDefinitionsSizes;
         public static ulong[] metadataUsages;
 
+        public static Dictionary<ulong, Il2CppType> mapTypesByPtrs = new Dictionary<ulong, Il2CppType>();
+        public static Dictionary<ulong, Il2CppArrayType> mapArrayTypesByPtrs = new Dictionary<ulong, Il2CppArrayType>();
+        public static Dictionary<ulong, Il2CppGenericClass> mapGenericClassesByPtrs = new Dictionary<ulong, Il2CppGenericClass>();
+        public static Dictionary<ulong, Il2CppGenericInst> mapGenericInstsByPtrs = new Dictionary<ulong, Il2CppGenericInst>();
 
     }
 }

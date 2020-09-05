@@ -129,8 +129,9 @@ namespace il2cpp_sdk_generator
             {
                 stream.Position = (long)Offset.FromVA(il2cpp.genericClassesPtrs[i]);
                 il2cpp.genericClasses[i] = reader.Read<Il2CppGenericClass>();
-                //Console.WriteLine($"0x{il2cpp.genericClassesPtrs[i]:X8}");
-                if(il2cpp.genericClasses[i].cached_class != 0)
+                il2cpp.mapGenericClassesByPtrs.Add(il2cpp.genericClassesPtrs[i], il2cpp.genericClasses[i]);
+                // These should always be 0 because we don't execute code
+                if (il2cpp.genericClasses[i].cached_classPtr != 0)
                     il2cpp.genericClasses[i].DumpToConsole();
             }
 
@@ -142,6 +143,7 @@ namespace il2cpp_sdk_generator
             {
                 stream.Position = (long)Offset.FromVA(il2cpp.genericInstsPtrs[i]);
                 il2cpp.genericInsts[i] = reader.Read<Il2CppGenericInst>();
+                il2cpp.mapGenericInstsByPtrs.Add(il2cpp.genericInstsPtrs[i], il2cpp.genericInsts[i]);
                 //Console.WriteLine($"0x{il2cpp.genericClassesPtrs[i]:X8}");
                 //il2cpp.genericInsts[i].DumpToConsole();
             }
@@ -162,6 +164,7 @@ namespace il2cpp_sdk_generator
             {
                 stream.Position = (long)Offset.FromVA(il2cpp.typesPtrs[i]);
                 il2cpp.types[i] = reader.Read<Il2CppType>();
+                il2cpp.mapTypesByPtrs.Add(il2cpp.typesPtrs[i], il2cpp.types[i]);
                 //il2cpp.types[i].DumpToConsole();
                 //Console.WriteLine($"0x{il2cpp.types[i].type}");
                 //Console.WriteLine($"0x{il2cpp.genericClassesPtrs[i]:X8}");
@@ -297,6 +300,52 @@ namespace il2cpp_sdk_generator
         {
             stream.Position = (long)Offset.FromVA(il2cpp.fieldOffsetsPtrs[typeIndex]) + 4 * fieldIndex;
             return reader.ReadUInt32();
+        }
+
+        public static Il2CppType GetIl2CppType(ulong ptr)
+        {
+            if (!il2cpp.mapTypesByPtrs.TryGetValue(ptr, out Il2CppType ret))
+                return null;
+            return ret;
+        }
+
+        public static Il2CppArrayType GetIl2CppArrayType(ulong ptr)
+        {
+            if (!il2cpp.mapArrayTypesByPtrs.TryGetValue(ptr, out Il2CppArrayType ret))
+            {
+                stream.Position = (long)Offset.FromVA(ptr);
+                ret = reader.Read<Il2CppArrayType>();
+                il2cpp.mapArrayTypesByPtrs.Add(ptr, ret);
+            }
+            return ret;
+        }
+
+        public static Il2CppGenericClass GetIl2CppGenericClass(ulong ptr)
+        {
+            if (!il2cpp.mapGenericClassesByPtrs.TryGetValue(ptr, out Il2CppGenericClass ret))
+            {
+                stream.Position = (long)Offset.FromVA(ptr);
+                ret = reader.Read<Il2CppGenericClass>();
+                il2cpp.mapGenericClassesByPtrs.Add(ptr, ret);
+            }
+            return ret;
+        }
+
+        public static Il2CppGenericInst GetIl2CppGenericInst(ulong ptr)
+        {
+            if (!il2cpp.mapGenericInstsByPtrs.TryGetValue(ptr, out Il2CppGenericInst ret))
+            {
+                stream.Position = (long)Offset.FromVA(ptr);
+                ret = reader.Read<Il2CppGenericInst>();
+                il2cpp.mapGenericInstsByPtrs.Add(ptr, ret);
+            }
+            return ret;
+        }
+
+        public static ulong[] GetGenericInstPointerArray(ulong ptr, Int32 count)
+        {
+            stream.Position = (long)Offset.FromVA(ptr);
+            return reader.ReadArray<ulong>(count);
         }
     }
 }

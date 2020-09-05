@@ -44,19 +44,7 @@ namespace il2cpp_sdk_generator
 
             // TODO: nested type simplify names maybe
 
-            string TypeString = "Type";
-            if(type.type == Il2CppTypeEnum.IL2CPP_TYPE_CLASS)
-            {
-                TypeString = $"{Metadata.resolvedTypes[type.data.klassIndex].GetFullName()}*";
-            }
-            else if(type.type == Il2CppTypeEnum.IL2CPP_TYPE_VALUETYPE)
-            {
-                TypeString = $"{Metadata.resolvedTypes[type.data.klassIndex].GetFullName()}";
-            }
-            else
-            {
-                TypeString = MetadataReader.GetTypeString(type);
-            }
+            string TypeString = MetadataReader.GetTypeString(type);
 
             code += $"{TypeString} {Name}; // 0x{il2cppReader.GetFieldOffset(declaringTypeDefIndex, fieldIndex):X}\n".Indent(indent);
 

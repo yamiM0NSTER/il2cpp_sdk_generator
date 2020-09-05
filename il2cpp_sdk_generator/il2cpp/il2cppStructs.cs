@@ -12,6 +12,7 @@ using GenericInstIndex = System.Int32;
 
 using uint32_t = System.UInt32;
 using int32_t = System.Int32;
+using uint8_t = System.Byte;
 
 namespace il2cpp_sdk_generator
 {
@@ -304,13 +305,13 @@ namespace il2cpp_sdk_generator
         /// <summary>
         /// if present, the Il2CppClass corresponding to the instantiation.
         /// </summary>
-        public ulong cached_class; // Il2CppClass*
+        public ulong cached_classPtr; // Il2CppClass*
     }
 
     class Il2CppGenericInst
     {
         public ulong type_argc; // uint32_t
-        public ulong type_argv; // Il2CppType**
+        public ulong type_argv; // Il2CppType** aka. array of pointers to Il2CppType
     }
 
     class Il2CppGenericContext
@@ -318,11 +319,11 @@ namespace il2cpp_sdk_generator
         /// <summary>
         /// The instantiation corresponding to the class generic parameters
         /// </summary>
-        public ulong class_inst; // Il2CppGenericInst*
+        public ulong class_instPtr; // Il2CppGenericInst*
         /// <summary>
         /// The instantiation corresponding to the method generic parameters
         /// </summary>
-        public ulong method_inst; // Il2CppGenericInst*
+        public ulong method_instPtr; // Il2CppGenericInst*
     }
 
     class Il2CppGenericMethodFunctionsDefinitions
@@ -363,12 +364,12 @@ namespace il2cpp_sdk_generator
         /// for PTR and SZARRAY
         /// </summary>
         [FieldOffset(0)]
-        public ulong type; // const Il2CppType*
+        public ulong typePtr; // const Il2CppType*
         /// <summary>
         /// for ARRAY
         /// </summary>
         [FieldOffset(0)]
-        public ulong array; // Il2CppArrayType*
+        public ulong arrayPtr; // Il2CppArrayType*
         /// <summary>
         /// for VAR and MVAR
         /// </summary>
@@ -378,7 +379,7 @@ namespace il2cpp_sdk_generator
         /// for GENERICINST
         /// </summary>
         [FieldOffset(0)]
-        public ulong generic_class; // Il2CppGenericClass*
+        public ulong generic_classPtr; // Il2CppGenericClass*
     }
 
     
@@ -502,6 +503,16 @@ namespace il2cpp_sdk_generator
         public int32_t native_size;
         public uint32_t static_fields_size;
         public uint32_t thread_static_fields_size;
+    }
+
+    class Il2CppArrayType
+    {
+        public ulong etypePtr; // const Il2CppType*
+        public uint8_t rank;
+        public uint8_t numsizes;
+        public uint8_t numlobounds;
+        public ulong sizesPtr; // int*
+        public ulong loboundsPtr; // int*
     }
 
     class il2cpp_Constants

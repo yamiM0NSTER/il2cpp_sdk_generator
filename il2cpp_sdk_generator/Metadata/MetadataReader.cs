@@ -347,41 +347,65 @@ namespace il2cpp_sdk_generator
                     return "double";
                 case Il2CppTypeEnum.IL2CPP_TYPE_STRING:
                     return "Il2CppString*";
-                // TODO
-                case Il2CppTypeEnum.IL2CPP_TYPE_PTR:
-                    return "x";
-                // TODO
-                case Il2CppTypeEnum.IL2CPP_TYPE_BYREF:
-                    return "x";
                 case Il2CppTypeEnum.IL2CPP_TYPE_VALUETYPE:
                     return Metadata.resolvedTypes[type.data.klassIndex].GetFullName();
                 case Il2CppTypeEnum.IL2CPP_TYPE_CLASS:
                     return $"{Metadata.resolvedTypes[type.data.klassIndex].GetFullName()}*";
-                // TODO
-                case Il2CppTypeEnum.IL2CPP_TYPE_VAR:
-                    return "x";
-                // TODO
-                case Il2CppTypeEnum.IL2CPP_TYPE_ARRAY:
-                    return "x";
-                // TODO
-                case Il2CppTypeEnum.IL2CPP_TYPE_GENERICINST:
-                    return "x";
-                // TODO
-                case Il2CppTypeEnum.IL2CPP_TYPE_TYPEDBYREF:
-                    return "x";
                 // TODO: confirm that's actually equivalent
                 case Il2CppTypeEnum.IL2CPP_TYPE_I:
                 case Il2CppTypeEnum.IL2CPP_TYPE_U:
                     return "void*";
-                // TODO
-                case Il2CppTypeEnum.IL2CPP_TYPE_FNPTR:
-                    return "x";
-                // TODO: confirm that's actually equivalent
+                // TODO: confirm that's actually equivalent or just Il2CppObject*
                 case Il2CppTypeEnum.IL2CPP_TYPE_OBJECT:
                     return "Il2CppBoxedObject*";
-                // TODO
+                // TODO: figure how the fuck to use c# multidimensional arrays as c++
+                case Il2CppTypeEnum.IL2CPP_TYPE_ARRAY:
+                    {
+                        Il2CppArrayType il2CppArrayType = il2cppReader.GetIl2CppArrayType(type.data.arrayPtr);
+                        return $"MArray<{GetTypeString(il2cppReader.GetIl2CppType(il2CppArrayType.etypePtr))}>*";
+                    }
                 case Il2CppTypeEnum.IL2CPP_TYPE_SZARRAY:
+                    {
+                        return $"Array<{GetTypeString(il2cppReader.GetIl2CppType(type.data.typePtr))}>*";
+                    }
+                case Il2CppTypeEnum.IL2CPP_TYPE_PTR:
+                    return $"{GetTypeString(il2cppReader.GetIl2CppType(type.data.typePtr))}*";
+                case Il2CppTypeEnum.IL2CPP_TYPE_GENERICINST:
+                    {
+                        // TODO: Change to generated structs when ready
+                        Il2CppGenericClass generic_class = il2cppReader.GetIl2CppGenericClass(type.data.generic_classPtr);
+                        string typeStr = $"{Metadata.resolvedTypes[generic_class.typeDefinitionIndex].GetFullName()}";
+                        // For whatever reason generic type names end with ` and digit (eg. List`1)
+                        if(typeStr.Contains('`'))
+                        {
+                            int idx = typeStr.IndexOf('`');
+                            typeStr = typeStr.Remove(idx, typeStr.Length - idx);
+                        }
+
+                        typeStr += "<";
+
+                        Il2CppGenericInst generic_inst = il2cppReader.GetIl2CppGenericInst(generic_class.context.class_instPtr);
+                        ulong[] pointers = il2cppReader.GetGenericInstPointerArray(generic_inst.type_argv, (Int32)generic_inst.type_argc);
+                        for(int i =0;i<pointers.Length;i++)
+                        {
+                            typeStr += GetTypeString(il2cppReader.GetIl2CppType(pointers[i]));
+                            if (i < pointers.Length - 1)
+                                typeStr += ",";
+                        }
+                        typeStr += ">*";
+                        return typeStr;
+                    }
+                // TODO
+                case Il2CppTypeEnum.IL2CPP_TYPE_VAR:
                 case Il2CppTypeEnum.IL2CPP_TYPE_MVAR:
+                    {
+                        Il2CppGenericParameter il2CppGenericParameter = Metadata.genericParameters[type.data.genericParameterIndex];
+                        return GetString(il2CppGenericParameter.nameIndex);
+                    }
+                
+                case Il2CppTypeEnum.IL2CPP_TYPE_TYPEDBYREF:
+                case Il2CppTypeEnum.IL2CPP_TYPE_FNPTR:
+                case Il2CppTypeEnum.IL2CPP_TYPE_BYREF:
                 case Il2CppTypeEnum.IL2CPP_TYPE_CMOD_REQD:
                 case Il2CppTypeEnum.IL2CPP_TYPE_CMOD_OPT:
                 case Il2CppTypeEnum.IL2CPP_TYPE_INTERNAL:
