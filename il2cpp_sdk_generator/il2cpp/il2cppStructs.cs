@@ -444,7 +444,10 @@ namespace il2cpp_sdk_generator
 
     enum Il2CppTypeEnum
     {
-        IL2CPP_TYPE_END = 0x00,       /* End of List */
+        /// <summary>
+        /// End of List
+        /// </summary>
+        IL2CPP_TYPE_END = 0x00,
         IL2CPP_TYPE_VOID = 0x01,
         IL2CPP_TYPE_BOOLEAN = 0x02,
         IL2CPP_TYPE_CHAR = 0x03,

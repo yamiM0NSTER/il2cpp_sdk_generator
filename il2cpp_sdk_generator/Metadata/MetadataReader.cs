@@ -182,18 +182,14 @@ namespace il2cpp_sdk_generator
             ResolvedType resolvedType = null;
             
             // TODO: Resolved class, struct, enum, interface
-            resolvedType = new ResolvedType(typeDef);
+            //resolvedType = new ResolvedType(typeDef, typeIdx);
             
 
-            for (int i = 0;i<typeDef.nested_type_count;i++)
-            {
-                Int32 nestedTypeIndex = Metadata.nestedTypeIndices[typeDef.nestedTypesStart + i];
-                resolvedType.nestedTypes.Add(ResolveType(nestedTypeIndex));
-            }
+            
 
             if (typeDef.isEnum)
             {
-                resolvedType = new ResolvedEnum(typeDef);
+                resolvedType = new ResolvedEnum(typeDef, typeIdx);
                 // Check fields
                 //for (int i = 0; i < typeDef.field_count; i++)
                 //{
@@ -208,18 +204,21 @@ namespace il2cpp_sdk_generator
                 uint Interface = 32;
                 if (flag == Interface)
                 {
+                    resolvedType = new ResolvedInterface(typeDef, typeIdx);
                     // BUT. WHO ASKED ANYWAY?!
-                    Console.WriteLine($"Prob interface: {resolvedType.Name}");
+                    //Console.WriteLine($"Prob interface: {resolvedType.Name}");
                 }
                 else
                 {
                     if (typeDef.isValueType)
                     {
-                        Console.WriteLine($"Prob struct: {resolvedType.Name}");
+                        resolvedType = new ResolvedStruct(typeDef, typeIdx);
+                        //Console.WriteLine($"Prob struct: {resolvedType.Name}");
                     }
                     else
                     {
-                        Console.WriteLine($"Prob class: {resolvedType.Name}");
+                        resolvedType = new ResolvedClass(typeDef, typeIdx);
+                        //Console.WriteLine($"Prob class: {resolvedType.Name}");
                     }
                 }
 
@@ -227,6 +226,13 @@ namespace il2cpp_sdk_generator
             resolvedType.Name = GetString(typeDef.nameIndex);
             resolvedType.Namespace = GetString(typeDef.namespaceIndex);
 
+            for (int i = 0; i < typeDef.nested_type_count; i++)
+            {
+                Int32 nestedTypeIndex = Metadata.nestedTypeIndices[typeDef.nestedTypesStart + i];
+                ResolvedType nestedType = ResolveType(nestedTypeIndex);
+                nestedType.declaringType = resolvedType;
+                resolvedType.nestedTypes.Add(nestedType);
+            }
 
             Metadata.resolvedTypes[typeIdx] = resolvedType;
             if (resolvedType.isNested)
@@ -307,6 +313,86 @@ namespace il2cpp_sdk_generator
             }
 
             return true;
+        }
+
+        public static string GetTypeString(Il2CppType type)
+        {
+            switch(type.type)
+            {
+                case Il2CppTypeEnum.IL2CPP_TYPE_VOID:
+                    return "void";
+                case Il2CppTypeEnum.IL2CPP_TYPE_BOOLEAN:
+                    return "bool";
+                case Il2CppTypeEnum.IL2CPP_TYPE_CHAR:
+                    return "Il2CppChar";
+                case Il2CppTypeEnum.IL2CPP_TYPE_I1: // SBYTE
+                    return "int8_t";
+                case Il2CppTypeEnum.IL2CPP_TYPE_U1:
+                    return "uint8_t";
+                case Il2CppTypeEnum.IL2CPP_TYPE_I2:
+                    return "int16_t";
+                case Il2CppTypeEnum.IL2CPP_TYPE_U2:
+                    return "uint16_t";
+                case Il2CppTypeEnum.IL2CPP_TYPE_I4:
+                    return "int32_t";
+                case Il2CppTypeEnum.IL2CPP_TYPE_U4:
+                    return "uint32_t";
+                case Il2CppTypeEnum.IL2CPP_TYPE_I8:
+                    return "int64_t";
+                case Il2CppTypeEnum.IL2CPP_TYPE_U8:
+                    return "uint64_t";
+                case Il2CppTypeEnum.IL2CPP_TYPE_R4:
+                    return "float";
+                case Il2CppTypeEnum.IL2CPP_TYPE_R8:
+                    return "double";
+                case Il2CppTypeEnum.IL2CPP_TYPE_STRING:
+                    return "Il2CppString*";
+                // TODO
+                case Il2CppTypeEnum.IL2CPP_TYPE_PTR:
+                    return "x";
+                // TODO
+                case Il2CppTypeEnum.IL2CPP_TYPE_BYREF:
+                    return "x";
+                case Il2CppTypeEnum.IL2CPP_TYPE_VALUETYPE:
+                    return Metadata.resolvedTypes[type.data.klassIndex].GetFullName();
+                case Il2CppTypeEnum.IL2CPP_TYPE_CLASS:
+                    return $"{Metadata.resolvedTypes[type.data.klassIndex].GetFullName()}*";
+                // TODO
+                case Il2CppTypeEnum.IL2CPP_TYPE_VAR:
+                    return "x";
+                // TODO
+                case Il2CppTypeEnum.IL2CPP_TYPE_ARRAY:
+                    return "x";
+                // TODO
+                case Il2CppTypeEnum.IL2CPP_TYPE_GENERICINST:
+                    return "x";
+                // TODO
+                case Il2CppTypeEnum.IL2CPP_TYPE_TYPEDBYREF:
+                    return "x";
+                // TODO: confirm that's actually equivalent
+                case Il2CppTypeEnum.IL2CPP_TYPE_I:
+                case Il2CppTypeEnum.IL2CPP_TYPE_U:
+                    return "void*";
+                // TODO
+                case Il2CppTypeEnum.IL2CPP_TYPE_FNPTR:
+                    return "x";
+                // TODO: confirm that's actually equivalent
+                case Il2CppTypeEnum.IL2CPP_TYPE_OBJECT:
+                    return "Il2CppBoxedObject*";
+                // TODO
+                case Il2CppTypeEnum.IL2CPP_TYPE_SZARRAY:
+                case Il2CppTypeEnum.IL2CPP_TYPE_MVAR:
+                case Il2CppTypeEnum.IL2CPP_TYPE_CMOD_REQD:
+                case Il2CppTypeEnum.IL2CPP_TYPE_CMOD_OPT:
+                case Il2CppTypeEnum.IL2CPP_TYPE_INTERNAL:
+                case Il2CppTypeEnum.IL2CPP_TYPE_MODIFIER:
+                case Il2CppTypeEnum.IL2CPP_TYPE_SENTINEL:
+                case Il2CppTypeEnum.IL2CPP_TYPE_PINNED:
+                case Il2CppTypeEnum.IL2CPP_TYPE_ENUM:
+                    return "x";
+                default:
+                    return "Type";
+            }
         }
     }
 }

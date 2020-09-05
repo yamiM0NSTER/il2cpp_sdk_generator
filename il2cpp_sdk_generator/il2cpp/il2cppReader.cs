@@ -18,8 +18,7 @@ namespace il2cpp_sdk_generator
             stream.Position = 0;
             reader = new BinaryReader(memoryStream, Encoding.UTF8);
         }
-
-
+        
         public static void Read()
         {
             if(il2cpp.codeRegistration64 != null)
@@ -34,41 +33,25 @@ namespace il2cpp_sdk_generator
             // Second pass to avoid stack overflow
             for (int i = 0; i < Metadata.typeDefinitions.Length; i++)
             {
+                Metadata.resolvedTypes[i].Resolve();
+
                 if (Metadata.typeDefinitions[i].parentIndex == -1)
                     continue;
 
                 var type = il2cpp.types[Metadata.typeDefinitions[i].parentIndex];
-                if(type.type == Il2CppTypeEnum.IL2CPP_TYPE_VALUETYPE || type.type == Il2CppTypeEnum.IL2CPP_TYPE_CLASS)
-                {
-                    if (type.data.klassIndex == i)
-                        continue;
-                    Metadata.resolvedTypes[i].parentType = MetadataReader.ResolveType(type.data.klassIndex);
-                }
-            }
-            // Resolve enums
-            for (int i = 0; i < Metadata.typeDefinitions.Length; i++)
-            {
-                if (!Metadata.typeDefinitions[i].isEnum)
+                if (type.type != Il2CppTypeEnum.IL2CPP_TYPE_VALUETYPE && type.type != Il2CppTypeEnum.IL2CPP_TYPE_CLASS)
+                    continue;
+                
+                if (type.data.klassIndex == i)
                     continue;
 
-                ResolvedEnum resolvedEnum = (ResolvedEnum)Metadata.resolvedTypes[i];
-
-                // Resolve enum
-                for (int k = 0; k < Metadata.typeDefinitions[i].field_count; k++)
-                {
-                    var fieldDef = Metadata.fieldDefinitions[k+ Metadata.typeDefinitions[i].fieldStart];
-                    var type = il2cpp.types[fieldDef.typeIndex];
-                    if((type.attrs & il2cpp_Constants.FIELD_ATTRIBUTE_STATIC) != 0)
-                    {
-                        MetadataReader.GetDefaultFieldValue(k + Metadata.typeDefinitions[i].fieldStart, out var val);
-                        //Console.WriteLine($"{MetadataReader.GetString(fieldDef.nameIndex)} = {val}");
-                        resolvedEnum.values.Add(MetadataReader.GetString(fieldDef.nameIndex), val);
-                        //values
-                    }
-                    //type.DumpToConsole();
-                }
-
-                Console.WriteLine(resolvedEnum.ToCode(2));
+                Metadata.resolvedTypes[i].parentType = MetadataReader.ResolveType(type.data.klassIndex);
+            }
+            // Test ToCode output
+            for (int i = 0; i < Metadata.typeDefinitions.Length; i++)
+            {
+                if(!Metadata.resolvedTypes[i].isNested)
+                    Console.WriteLine(Metadata.resolvedTypes[i].ToCode(2));
 
                 //   Metadata.resolvedTypes[i].parentType = ResolveType(Metadata.typeDefinitions[i].parentIndex);
             }
@@ -308,6 +291,12 @@ namespace il2cpp_sdk_generator
             //    Console.WriteLine($"0x{il2cpp.windowsRuntimeFactoryTable[i]:X8}");
             //}
             
+        }
+
+        public static UInt32 GetFieldOffset(Int32 typeIndex, Int32 fieldIndex)
+        {
+            stream.Position = (long)Offset.FromVA(il2cpp.fieldOffsetsPtrs[typeIndex]) + 4 * fieldIndex;
+            return reader.ReadUInt32();
         }
     }
 }
