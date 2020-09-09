@@ -56,6 +56,38 @@ namespace il2cpp_sdk_generator
                 //   Metadata.resolvedTypes[i].parentType = ResolveType(Metadata.typeDefinitions[i].parentIndex);
             }
 
+            //// Check existing generated generic classes
+            //for(int i =0;i<il2cpp.genericClasses.Length;i++)
+            //{
+            //    Il2CppGenericClass generic_class = il2cpp.genericClasses[i];
+            //    string typeStr = $"{Metadata.resolvedTypes[generic_class.typeDefinitionIndex].GetFullName()}";
+            //    // For whatever reason generic type names end with ` and digit (eg. List`1)
+            //    if (typeStr.Contains('`'))
+            //    {
+            //        int idx = typeStr.IndexOf('`');
+            //        typeStr = typeStr.Remove(idx, typeStr.Length - idx);
+            //    }
+
+            //    typeStr += "<";
+
+            //    Il2CppGenericInst generic_inst = il2cppReader.GetIl2CppGenericInst(generic_class.context.class_instPtr);
+            //    ulong[] pointers = il2cppReader.GetGenericInstPointerArray(generic_inst.type_argv, (Int32)generic_inst.type_argc);
+            //    for (int k = 0; k < pointers.Length; k++)
+            //    {
+            //        Il2CppType il2CppType = il2cppReader.GetIl2CppType(pointers[k]);
+                    
+            //        typeStr += MetadataReader.GetTypeString(il2CppType);
+            //        if (k < pointers.Length - 1)
+            //            typeStr += ",";
+            //        if (il2CppType.type == Il2CppTypeEnum.IL2CPP_TYPE_VAR || il2CppType.type == Il2CppTypeEnum.IL2CPP_TYPE_MVAR)
+            //        {
+            //            continue;
+            //        }
+            //    }
+            //    typeStr += ">*";
+            //    //Console.WriteLine(typeStr);
+            //}
+
             // TODO: Trusted references
             return;
 

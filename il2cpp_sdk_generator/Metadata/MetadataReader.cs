@@ -107,10 +107,17 @@ namespace il2cpp_sdk_generator
             Console.WriteLine();
         }
 
+        static Dictionary<Int32, string> mapIndexStringCache = new Dictionary<Int32, string>();
+
         public static string GetString(Int32 idx)
         {
+            if(mapIndexStringCache.TryGetValue(idx, out string result))
+                return result;
+
             stream.Position = Metadata.header.stringOffset + idx;
-            return reader.ReadNullTerminatedString();
+            result = reader.ReadNullTerminatedString();
+            mapIndexStringCache.Add(idx, result);
+            return result;
         }
 
         public ResolvedImage ResolveImage(Il2CppImageDefinition image)
@@ -166,6 +173,16 @@ namespace il2cpp_sdk_generator
             for(int i=0;i< Metadata.typeDefinitions.Length;i++)
             {
                 ResolveType(i);
+                //if (Metadata.typeDefinitions[i].genericContainerIndex < 0)
+                //    continue;
+
+                for(int k =0;k< Metadata.typeDefinitions[i].method_count;k++)
+                {
+                    Il2CppMethodDefinition methodDef = Metadata.methodDefinitions[Metadata.typeDefinitions[i].methodStart + k];
+                    string name = GetString(methodDef.nameIndex);
+                    if(methodDef.genericContainerIndex >= 0 && name == "GetComponent")
+                        Console.WriteLine();
+                }
             }
         }
 
@@ -315,61 +332,89 @@ namespace il2cpp_sdk_generator
             return true;
         }
 
+        static Dictionary<Il2CppType, string> mapTypeStringCache = new Dictionary<Il2CppType, string>();
+
         public static string GetTypeString(Il2CppType type)
         {
+            if(mapTypeStringCache.TryGetValue(type, out string result))
+            {
+                return result;
+            }
+
+            result = "";
+
             switch(type.type)
             {
                 case Il2CppTypeEnum.IL2CPP_TYPE_VOID:
-                    return "void";
+                    result = "void";
+                    break;
                 case Il2CppTypeEnum.IL2CPP_TYPE_BOOLEAN:
-                    return "bool";
+                    result = "bool";
+                    break;
                 case Il2CppTypeEnum.IL2CPP_TYPE_CHAR:
-                    return "Il2CppChar";
+                    result = "Il2CppChar";
+                    break;
                 case Il2CppTypeEnum.IL2CPP_TYPE_I1: // SBYTE
-                    return "int8_t";
+                    result = "int8_t";
+                    break;
                 case Il2CppTypeEnum.IL2CPP_TYPE_U1:
-                    return "uint8_t";
+                    result = "uint8_t";
+                    break;
                 case Il2CppTypeEnum.IL2CPP_TYPE_I2:
-                    return "int16_t";
+                    result = "int16_t";
+                    break;
                 case Il2CppTypeEnum.IL2CPP_TYPE_U2:
-                    return "uint16_t";
+                    result = "uint16_t";
+                    break;
                 case Il2CppTypeEnum.IL2CPP_TYPE_I4:
-                    return "int32_t";
+                    result = "int32_t";
+                    break;
                 case Il2CppTypeEnum.IL2CPP_TYPE_U4:
-                    return "uint32_t";
+                    result = "uint32_t";
+                    break;
                 case Il2CppTypeEnum.IL2CPP_TYPE_I8:
-                    return "int64_t";
+                    result = "int64_t";
+                    break;
                 case Il2CppTypeEnum.IL2CPP_TYPE_U8:
-                    return "uint64_t";
+                    result = "uint64_t";
+                    break;
                 case Il2CppTypeEnum.IL2CPP_TYPE_R4:
-                    return "float";
+                    result = "float";
+                    break;
                 case Il2CppTypeEnum.IL2CPP_TYPE_R8:
-                    return "double";
+                    result = "double";
+                    break;
                 case Il2CppTypeEnum.IL2CPP_TYPE_STRING:
-                    return "Il2CppString*";
+                    result = "Il2CppString*";
+                    break;
                 case Il2CppTypeEnum.IL2CPP_TYPE_VALUETYPE:
-                    return Metadata.resolvedTypes[type.data.klassIndex].GetFullName();
+                    result = Metadata.resolvedTypes[type.data.klassIndex].GetFullName();
+                    break;
                 case Il2CppTypeEnum.IL2CPP_TYPE_CLASS:
-                    return $"{Metadata.resolvedTypes[type.data.klassIndex].GetFullName()}*";
+                    result = $"{Metadata.resolvedTypes[type.data.klassIndex].GetFullName()}*";
+                    break;
                 // TODO: confirm that's actually equivalent
                 case Il2CppTypeEnum.IL2CPP_TYPE_I:
                 case Il2CppTypeEnum.IL2CPP_TYPE_U:
-                    return "void*";
+                    result = "void*";
+                    break;
                 // TODO: confirm that's actually equivalent or just Il2CppObject*
                 case Il2CppTypeEnum.IL2CPP_TYPE_OBJECT:
-                    return "Il2CppBoxedObject*";
+                    result = "Il2CppBoxedObject*";
+                    break;
                 // TODO: figure how the fuck to use c# multidimensional arrays as c++
                 case Il2CppTypeEnum.IL2CPP_TYPE_ARRAY:
                     {
                         Il2CppArrayType il2CppArrayType = il2cppReader.GetIl2CppArrayType(type.data.arrayPtr);
-                        return $"MArray<{GetTypeString(il2cppReader.GetIl2CppType(il2CppArrayType.etypePtr))}>*";
+                        result = $"MArray<{GetTypeString(il2cppReader.GetIl2CppType(il2CppArrayType.etypePtr))}>*";
+                        break;
                     }
                 case Il2CppTypeEnum.IL2CPP_TYPE_SZARRAY:
-                    {
-                        return $"Array<{GetTypeString(il2cppReader.GetIl2CppType(type.data.typePtr))}>*";
-                    }
+                        result = $"Array<{GetTypeString(il2cppReader.GetIl2CppType(type.data.typePtr))}>*";
+                        break;
                 case Il2CppTypeEnum.IL2CPP_TYPE_PTR:
-                    return $"{GetTypeString(il2cppReader.GetIl2CppType(type.data.typePtr))}*";
+                    result = $"{GetTypeString(il2cppReader.GetIl2CppType(type.data.typePtr))}*";
+                    break;
                 case Il2CppTypeEnum.IL2CPP_TYPE_GENERICINST:
                     {
                         // TODO: Change to generated structs when ready
@@ -393,17 +438,21 @@ namespace il2cpp_sdk_generator
                                 typeStr += ",";
                         }
                         typeStr += ">*";
-                        return typeStr;
+                        result = typeStr;
+                        break;
                     }
                 // TODO
                 case Il2CppTypeEnum.IL2CPP_TYPE_VAR:
                 case Il2CppTypeEnum.IL2CPP_TYPE_MVAR:
                     {
                         Il2CppGenericParameter il2CppGenericParameter = Metadata.genericParameters[type.data.genericParameterIndex];
-                        return GetString(il2CppGenericParameter.nameIndex);
+                        result = GetString(il2CppGenericParameter.nameIndex);
+                        break;
                     }
                 
                 case Il2CppTypeEnum.IL2CPP_TYPE_TYPEDBYREF:
+                    result = "Il2CppTypedRef";
+                    break;
                 case Il2CppTypeEnum.IL2CPP_TYPE_FNPTR:
                 case Il2CppTypeEnum.IL2CPP_TYPE_BYREF:
                 case Il2CppTypeEnum.IL2CPP_TYPE_CMOD_REQD:
@@ -413,10 +462,15 @@ namespace il2cpp_sdk_generator
                 case Il2CppTypeEnum.IL2CPP_TYPE_SENTINEL:
                 case Il2CppTypeEnum.IL2CPP_TYPE_PINNED:
                 case Il2CppTypeEnum.IL2CPP_TYPE_ENUM:
-                    return "x";
+                    result = "x";
+                    break;
                 default:
-                    return "Type";
+                    result = "Type";
+                    break;
             }
+
+            mapTypeStringCache.Add(type, result);
+            return result;
         }
     }
 }

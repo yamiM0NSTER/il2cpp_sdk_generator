@@ -17,7 +17,7 @@ namespace il2cpp_sdk_generator
             {
                 if (!Types[i].Name.isCppIdentifier())
                     continue;
-                File.WriteAllText($"{Types[i].Name}.h", Types[i].Name);
+                File.WriteAllText($"{Types[i].Name}.h", Types[i].ToCode());
             }
             //File.WriteAllText
         }

@@ -67,12 +67,14 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ResolvedObjects\ResolvedClass.cs" />
     <Compile Include="ResolvedObjects\ResolvedEnum.cs" />
+    <Compile Include="ResolvedObjects\ResolvedEvent.cs" />
     <Compile Include="ResolvedObjects\ResolvedField.cs" />
     <Compile Include="ResolvedObjects\ResolvedImage.cs" />
     <Compile Include="ResolvedObjects\ResolvedInterface.cs" />
     <Compile Include="ResolvedObjects\ResolvedMethod.cs" />
     <Compile Include="ResolvedObjects\ResolvedNamespace.cs" />
     <Compile Include="ResolvedObjects\ResolvedObject.cs" />
+    <Compile Include="ResolvedObjects\ResolvedParameter.cs" />
     <Compile Include="ResolvedObjects\ResolvedProperty.cs" />
     <Compile Include="ResolvedObjects\ResolvedStruct.cs" />
     <Compile Include="ResolvedObjects\ResolvedType.cs" />
