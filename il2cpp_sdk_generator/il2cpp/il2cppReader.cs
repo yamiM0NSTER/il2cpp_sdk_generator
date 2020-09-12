@@ -48,13 +48,13 @@ namespace il2cpp_sdk_generator
                 Metadata.resolvedTypes[i].parentType = MetadataReader.ResolveType(type.data.klassIndex);
             }
             // Test ToCode output
-            for (int i = 0; i < Metadata.typeDefinitions.Length; i++)
-            {
-                if(!Metadata.resolvedTypes[i].isNested)
-                    Console.WriteLine(Metadata.resolvedTypes[i].ToCode(2));
+            //for (int i = 0; i < Metadata.typeDefinitions.Length; i++)
+            //{
+            //    if(!Metadata.resolvedTypes[i].isNested)
+            //        Console.WriteLine(Metadata.resolvedTypes[i].ToCode(2));
 
-                //   Metadata.resolvedTypes[i].parentType = ResolveType(Metadata.typeDefinitions[i].parentIndex);
-            }
+            //    //   Metadata.resolvedTypes[i].parentType = ResolveType(Metadata.typeDefinitions[i].parentIndex);
+            //}
 
             //// Check existing generated generic classes
             //for(int i =0;i<il2cpp.genericClasses.Length;i++)
@@ -331,7 +331,10 @@ namespace il2cpp_sdk_generator
         public static UInt32 GetFieldOffset(Int32 typeIndex, Int32 fieldIndex)
         {
             stream.Position = (long)Offset.FromVA(il2cpp.fieldOffsetsPtrs[typeIndex]) + 4 * fieldIndex;
-            return reader.ReadUInt32();
+            UInt32 offset = reader.ReadUInt32();
+            if (Metadata.typeDefinitions[typeIndex].isValueType)
+                offset -= 0x10;
+            return offset;
         }
 
         public static Il2CppType GetIl2CppType(ulong ptr)

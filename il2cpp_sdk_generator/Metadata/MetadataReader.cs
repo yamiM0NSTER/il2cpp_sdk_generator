@@ -175,14 +175,6 @@ namespace il2cpp_sdk_generator
                 ResolveType(i);
                 //if (Metadata.typeDefinitions[i].genericContainerIndex < 0)
                 //    continue;
-
-                for(int k =0;k< Metadata.typeDefinitions[i].method_count;k++)
-                {
-                    Il2CppMethodDefinition methodDef = Metadata.methodDefinitions[Metadata.typeDefinitions[i].methodStart + k];
-                    string name = GetString(methodDef.nameIndex);
-                    if(methodDef.genericContainerIndex >= 0 && name == "GetComponent")
-                        Console.WriteLine();
-                }
             }
         }
 
@@ -200,20 +192,10 @@ namespace il2cpp_sdk_generator
             
             // TODO: Resolved class, struct, enum, interface
             //resolvedType = new ResolvedType(typeDef, typeIdx);
-            
-
-            
 
             if (typeDef.isEnum)
             {
                 resolvedType = new ResolvedEnum(typeDef, typeIdx);
-                // Check fields
-                //for (int i = 0; i < typeDef.field_count; i++)
-                //{
-                //    var fieldDef = Metadata.fieldDefinitions[i + typeDef.fieldStart];
-                //    fieldDef.DumpToConsole();
-                //}
-                //Console.WriteLine($"Prob enum: {resolvedType.Name}");
             }
             else
             {
@@ -222,26 +204,15 @@ namespace il2cpp_sdk_generator
                 if (flag == Interface)
                 {
                     resolvedType = new ResolvedInterface(typeDef, typeIdx);
-                    // BUT. WHO ASKED ANYWAY?!
-                    //Console.WriteLine($"Prob interface: {resolvedType.Name}");
                 }
                 else
                 {
                     if (typeDef.isValueType)
-                    {
                         resolvedType = new ResolvedStruct(typeDef, typeIdx);
-                        //Console.WriteLine($"Prob struct: {resolvedType.Name}");
-                    }
                     else
-                    {
                         resolvedType = new ResolvedClass(typeDef, typeIdx);
-                        //Console.WriteLine($"Prob class: {resolvedType.Name}");
-                    }
                 }
-
             }
-            resolvedType.Name = GetString(typeDef.nameIndex);
-            resolvedType.Namespace = GetString(typeDef.namespaceIndex);
 
             for (int i = 0; i < typeDef.nested_type_count; i++)
             {
@@ -337,11 +308,7 @@ namespace il2cpp_sdk_generator
         public static string GetTypeString(Il2CppType type)
         {
             if(mapTypeStringCache.TryGetValue(type, out string result))
-            {
                 return result;
-            }
-
-            result = "";
 
             switch(type.type)
             {
@@ -441,7 +408,6 @@ namespace il2cpp_sdk_generator
                         result = typeStr;
                         break;
                     }
-                // TODO
                 case Il2CppTypeEnum.IL2CPP_TYPE_VAR:
                 case Il2CppTypeEnum.IL2CPP_TYPE_MVAR:
                     {
@@ -449,10 +415,10 @@ namespace il2cpp_sdk_generator
                         result = GetString(il2CppGenericParameter.nameIndex);
                         break;
                     }
-                
                 case Il2CppTypeEnum.IL2CPP_TYPE_TYPEDBYREF:
                     result = "Il2CppTypedRef";
                     break;
+                // TODO
                 case Il2CppTypeEnum.IL2CPP_TYPE_FNPTR:
                 case Il2CppTypeEnum.IL2CPP_TYPE_BYREF:
                 case Il2CppTypeEnum.IL2CPP_TYPE_CMOD_REQD:
@@ -470,6 +436,141 @@ namespace il2cpp_sdk_generator
             }
 
             mapTypeStringCache.Add(type, result);
+            return result;
+        }
+
+        public static string GetSimpleTypeString(Il2CppType type)
+        {
+            //if (mapTypeStringCache.TryGetValue(type, out string result))
+            //    return result;
+            string result;
+
+            switch (type.type)
+            {
+                case Il2CppTypeEnum.IL2CPP_TYPE_VOID:
+                    result = "void";
+                    break;
+                case Il2CppTypeEnum.IL2CPP_TYPE_BOOLEAN:
+                    result = "bool";
+                    break;
+                case Il2CppTypeEnum.IL2CPP_TYPE_CHAR:
+                    result = "Il2CppChar";
+                    break;
+                case Il2CppTypeEnum.IL2CPP_TYPE_I1: // SBYTE
+                    result = "int8_t";
+                    break;
+                case Il2CppTypeEnum.IL2CPP_TYPE_U1:
+                    result = "uint8_t";
+                    break;
+                case Il2CppTypeEnum.IL2CPP_TYPE_I2:
+                    result = "int16_t";
+                    break;
+                case Il2CppTypeEnum.IL2CPP_TYPE_U2:
+                    result = "uint16_t";
+                    break;
+                case Il2CppTypeEnum.IL2CPP_TYPE_I4:
+                    result = "int32_t";
+                    break;
+                case Il2CppTypeEnum.IL2CPP_TYPE_U4:
+                    result = "uint32_t";
+                    break;
+                case Il2CppTypeEnum.IL2CPP_TYPE_I8:
+                    result = "int64_t";
+                    break;
+                case Il2CppTypeEnum.IL2CPP_TYPE_U8:
+                    result = "uint64_t";
+                    break;
+                case Il2CppTypeEnum.IL2CPP_TYPE_R4:
+                    result = "float";
+                    break;
+                case Il2CppTypeEnum.IL2CPP_TYPE_R8:
+                    result = "double";
+                    break;
+                case Il2CppTypeEnum.IL2CPP_TYPE_STRING:
+                    result = "Il2CppString";
+                    break;
+                case Il2CppTypeEnum.IL2CPP_TYPE_VALUETYPE:
+                    result = Metadata.resolvedTypes[type.data.klassIndex].Name;
+                    break;
+                case Il2CppTypeEnum.IL2CPP_TYPE_CLASS:
+                    result = $"{Metadata.resolvedTypes[type.data.klassIndex].Name}";
+                    break;
+                // TODO: confirm that's actually equivalent
+                case Il2CppTypeEnum.IL2CPP_TYPE_I:
+                case Il2CppTypeEnum.IL2CPP_TYPE_U:
+                    result = "voidPtr";
+                    break;
+                // TODO: confirm that's actually equivalent or just Il2CppObject*
+                case Il2CppTypeEnum.IL2CPP_TYPE_OBJECT:
+                    result = "Il2CppBoxedObject";
+                    break;
+                // TODO: figure how the fuck to use c# multidimensional arrays as c++
+                case Il2CppTypeEnum.IL2CPP_TYPE_ARRAY:
+                    {
+                        Il2CppArrayType il2CppArrayType = il2cppReader.GetIl2CppArrayType(type.data.arrayPtr);
+                        result = $"MArray_{GetSimpleTypeString(il2cppReader.GetIl2CppType(il2CppArrayType.etypePtr))}_";
+                        break;
+                    }
+                case Il2CppTypeEnum.IL2CPP_TYPE_SZARRAY:
+                    result = $"Array_{GetSimpleTypeString(il2cppReader.GetIl2CppType(type.data.typePtr))}_";
+                    break;
+                case Il2CppTypeEnum.IL2CPP_TYPE_PTR:
+                    result = $"{GetSimpleTypeString(il2cppReader.GetIl2CppType(type.data.typePtr))}_";
+                    break;
+                case Il2CppTypeEnum.IL2CPP_TYPE_GENERICINST:
+                    {
+                        // TODO: Change to generated structs when ready
+                        Il2CppGenericClass generic_class = il2cppReader.GetIl2CppGenericClass(type.data.generic_classPtr);
+                        string typeStr = $"{Metadata.resolvedTypes[generic_class.typeDefinitionIndex].Name}";
+                        // For whatever reason generic type names end with ` and digit (eg. List`1)
+                        if (typeStr.Contains('`'))
+                        {
+                            int idx = typeStr.IndexOf('`');
+                            typeStr = typeStr.Remove(idx, typeStr.Length - idx);
+                        }
+
+                        typeStr += "_";
+
+                        Il2CppGenericInst generic_inst = il2cppReader.GetIl2CppGenericInst(generic_class.context.class_instPtr);
+                        ulong[] pointers = il2cppReader.GetGenericInstPointerArray(generic_inst.type_argv, (Int32)generic_inst.type_argc);
+                        for (int i = 0; i < pointers.Length; i++)
+                        {
+                            typeStr += GetSimpleTypeString(il2cppReader.GetIl2CppType(pointers[i]));
+                            if (i < pointers.Length - 1)
+                                typeStr += "_";
+                        }
+                        typeStr += "_";
+                        result = typeStr;
+                        break;
+                    }
+                case Il2CppTypeEnum.IL2CPP_TYPE_VAR:
+                case Il2CppTypeEnum.IL2CPP_TYPE_MVAR:
+                    {
+                        Il2CppGenericParameter il2CppGenericParameter = Metadata.genericParameters[type.data.genericParameterIndex];
+                        result = GetString(il2CppGenericParameter.nameIndex);
+                        break;
+                    }
+                case Il2CppTypeEnum.IL2CPP_TYPE_TYPEDBYREF:
+                    result = "Il2CppTypedRef";
+                    break;
+                // TODO
+                case Il2CppTypeEnum.IL2CPP_TYPE_FNPTR:
+                case Il2CppTypeEnum.IL2CPP_TYPE_BYREF:
+                case Il2CppTypeEnum.IL2CPP_TYPE_CMOD_REQD:
+                case Il2CppTypeEnum.IL2CPP_TYPE_CMOD_OPT:
+                case Il2CppTypeEnum.IL2CPP_TYPE_INTERNAL:
+                case Il2CppTypeEnum.IL2CPP_TYPE_MODIFIER:
+                case Il2CppTypeEnum.IL2CPP_TYPE_SENTINEL:
+                case Il2CppTypeEnum.IL2CPP_TYPE_PINNED:
+                case Il2CppTypeEnum.IL2CPP_TYPE_ENUM:
+                    result = "x";
+                    break;
+                default:
+                    result = "Type";
+                    break;
+            }
+
+            //mapTypeStringCache.Add(type, result);
             return result;
         }
     }

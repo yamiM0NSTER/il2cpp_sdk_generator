@@ -48,6 +48,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CodeScanner\CodeScanner.cs" />
+    <Compile Include="Demangler\Demangler.cs" />
     <Compile Include="Extensions\BinaryReader.cs" />
     <Compile Include="Extensions\ObjectDump.cs" />
     <Compile Include="Extensions\String.cs" />

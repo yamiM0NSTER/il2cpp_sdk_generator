@@ -80,5 +80,53 @@ namespace il2cpp_sdk_generator
                 return (methodDef.flags & il2cpp_Constants.METHOD_ATTRIBUTE_STATIC) != 0;
             }
         }
+
+        public string DemangledPrefix()
+        {
+            return $"e{StaticString()}_{AccessString()}{MetadataReader.GetSimpleTypeString(il2cpp.types[methodDef.returnType])}";
+        }
+
+        public string StaticString()
+        {
+            if (isStatic)
+                return "s";
+            return "";
+        }
+
+        public string AccessString()
+        {
+            var accessFlag = methodDef.flags & il2cpp_Constants.METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK;
+            switch (accessFlag)
+            {
+                case il2cpp_Constants.METHOD_ATTRIBUTE_PRIVATE:
+                    return "Private";
+                case il2cpp_Constants.METHOD_ATTRIBUTE_PUBLIC:
+                    return "Public";
+                case il2cpp_Constants.METHOD_ATTRIBUTE_FAMILY:
+                    return "Protected";
+                case il2cpp_Constants.METHOD_ATTRIBUTE_ASSEM:
+                case il2cpp_Constants.METHOD_ATTRIBUTE_FAM_AND_ASSEM:
+                    return "Internal";
+                case il2cpp_Constants.METHOD_ATTRIBUTE_FAM_OR_ASSEM:
+                    return "ProtectedInternal";
+            }
+            return "";
+        }
+
+        public void DemangleMethods()
+        {
+            if (add != null)
+            {
+                add.Name = $"add_{Name}";
+                add.resolvedParameters[0].Name = "value";
+            }
+            if (remove != null)
+            {
+                remove.Name = $"remove_{Name}";
+                remove.resolvedParameters[0].Name = "value";
+            }
+            if (raise != null)
+                raise.Name = $"raise_{Name}";
+        }
     }
 }

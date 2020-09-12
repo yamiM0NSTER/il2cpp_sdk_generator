@@ -50,5 +50,30 @@ namespace il2cpp_sdk_generator
 
             return code;
         }
+
+        public string DemangledPrefix()
+        {
+            return $"f_{AccessString()}{MetadataReader.GetSimpleTypeString(type)}";
+        }
+
+        public string AccessString()
+        {
+            var accessFlag = type.attrs & il2cpp_Constants.FIELD_ATTRIBUTE_FIELD_ACCESS_MASK;
+            switch (accessFlag)
+            {
+                case il2cpp_Constants.FIELD_ATTRIBUTE_PRIVATE:
+                    return "Private";
+                case il2cpp_Constants.FIELD_ATTRIBUTE_PUBLIC:
+                    return "Public";
+                case il2cpp_Constants.FIELD_ATTRIBUTE_FAMILY:
+                    return "Protected";
+                case il2cpp_Constants.FIELD_ATTRIBUTE_ASSEMBLY:
+                case il2cpp_Constants.FIELD_ATTRIBUTE_FAM_AND_ASSEM:
+                    return "Internal";
+                case il2cpp_Constants.FIELD_ATTRIBUTE_FAM_OR_ASSEM:
+                    return "ProtectedInternal";
+            }
+            return "";
+        }
     }
 }

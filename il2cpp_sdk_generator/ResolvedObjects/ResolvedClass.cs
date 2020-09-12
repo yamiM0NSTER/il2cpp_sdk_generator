@@ -23,11 +23,15 @@ namespace il2cpp_sdk_generator
         // Methods
         List<ResolvedMethod> instanceMethods = new List<ResolvedMethod>();
         List<ResolvedMethod> staticMethods = new List<ResolvedMethod>();
+        Dictionary<Int32, ResolvedMethod> slottedMethods = new Dictionary<Int32, ResolvedMethod>();
+
 
         public ResolvedClass(Il2CppTypeDefinition type, Int32 idx)
         {
             typeDef = type;
             typeDefinitionIndex = idx;
+            Name = MetadataReader.GetString(typeDef.nameIndex);
+            Namespace = MetadataReader.GetString(typeDef.namespaceIndex);
         }
 
         public override void Resolve()
@@ -47,7 +51,6 @@ namespace il2cpp_sdk_generator
                 }
 
                 MakeGenericTemplate();
-                
             }
 
             // Resolve fields
@@ -118,6 +121,9 @@ namespace il2cpp_sdk_generator
                     resolvedEvent.AssignMethod(i, resolvedMethod);
                     continue;
                 }
+
+                if(methodDef.slot != il2cpp_Constants.kInvalidIl2CppMethodSlot)
+                    slottedMethods.Add(methodDef.slot, resolvedMethod);
 
                 if (!resolvedMethod.isStatic)
                     instanceMethods.Add(resolvedMethod);
@@ -276,6 +282,312 @@ namespace il2cpp_sdk_generator
                     genericTemplate += ", ";
             }
             genericTemplate += ">";
+        }
+
+        public override string DemangledPrefix()
+        {
+            if (parentType == Demangler.multicastDelegateType)
+            {
+                return base.DemangledPrefix() + "Callback";
+            }
+            else
+            {
+                bool hasCoroutineProperty = false;
+                bool hasMoveNextMethod = false;
+
+                if(instanceProperties.Count != 2)
+                    goto CLASS;
+
+                for (int i = 0; i < instanceProperties.Count; i++)
+                {
+                    if(instanceProperties[i].Name == "System.Collections.IEnumerator.Current")
+                    {
+                        hasCoroutineProperty = true;
+                        break;
+                    }
+                }
+
+                if(!hasCoroutineProperty)
+                    goto CLASS;
+
+                for (int i = 0; i < instanceMethods.Count; i++)
+                {
+                    if (instanceMethods[i].Name == "MoveNext")
+                    {
+                        hasMoveNextMethod = true;
+                        break;
+                    }
+                }
+
+                if (!hasMoveNextMethod)
+                    goto CLASS;
+
+                return base.DemangledPrefix() + "Coroutine";
+            }
+
+            CLASS:
+            return base.DemangledPrefix() + "Class";
+        }
+
+        public override Dictionary<string, Int32> Demangle(Dictionary<string, Int32> demangledPrefixesParent = null)
+        {
+            Dictionary<string, Int32> demangledPrefixes = new Dictionary<string, Int32>();
+            if (demangledPrefixesParent != null)
+                demangledPrefixes = new Dictionary<string, Int32>(demangledPrefixesParent);
+            
+
+            // Demangle fields
+            for (int i = 0; i < instanceFields.Count; i++)
+            {
+                ResolvedField resolvedField = instanceFields[i];
+                if (resolvedField.Name.isCSharpIdentifier())
+                {
+                    if (resolvedField.Name.isCppIdentifier())
+                        continue;
+
+                    resolvedField.Name = resolvedField.Name.Replace('<', '_').Replace('>', '_');
+                    continue;
+                }
+
+                string test = instanceFields[i].DemangledPrefix();
+                resolvedField.Name = instanceFields[i].DemangledPrefix();
+                //code += instanceFields[i].ToCode(indent + 2);
+            }
+            // Demangle properties
+            // Demangle Events
+            // Demangle Methods
+            // Demangle Nested types
+
+
+
+            return demangledPrefixes;
+        }
+
+
+
+        public override void Demangle()
+        {
+            if (isDemangled)
+                return;
+
+            base.Demangle();
+
+            Dictionary<string, Int32> demangledPrefixes = new Dictionary<string, Int32>();
+            if (parentType != null)
+            {
+                // If type inherits make sure parent is demangled first
+                if (!Demangler.demangledTypes.TryGetValue(parentType, out var demangledPrefixesParent))
+                {
+                    if (!Demangler.demangleQueue.TryGetValue(parentType, out var list))
+                    {
+                        list = new List<ResolvedType>();
+                        Demangler.demangleQueue.Add(parentType, list);
+                    }
+                    list.Add(this);
+                    return;
+                }
+                // Make copy so other inheriting classes can still use parent dictionary
+                demangledPrefixes = new Dictionary<string, int>(demangledPrefixesParent);
+            }
+            // Demangle here
+
+            // Demangle fields
+            for (int i = 0; i < instanceFields.Count; i++)
+            {
+                ResolvedField resolvedField = instanceFields[i];
+                if (resolvedField.Name.isCSharpIdentifier())
+                {
+                    if (resolvedField.Name.isCppIdentifier())
+                        continue;
+
+                    resolvedField.Name = resolvedField.Name.Replace('<', '_').Replace('>', '_').Replace('.', '_');
+                    continue;
+                }
+
+                string demangledPrefix = instanceFields[i].DemangledPrefix();
+                if (!demangledPrefix.EndsWith("_"))
+                    demangledPrefix += "_";
+                if (!demangledPrefixes.TryGetValue(demangledPrefix, out var idx))
+                {
+                    idx = 0;
+                    demangledPrefixes.Add(demangledPrefix, idx);
+                }
+                idx++;
+                resolvedField.Name = $"{demangledPrefix}{idx}";
+                demangledPrefixes[demangledPrefix] = idx;
+                //code += instanceFields[i].ToCode(indent + 2);
+            }
+            // Demangle properties
+            for(int i =0;i<instanceProperties.Count;i++)
+            {
+                ResolvedProperty resolvedProperty = instanceProperties[i];
+                if (resolvedProperty.Name.isCSharpIdentifier())
+                {
+                    if (resolvedProperty.Name.isCppIdentifier())
+                        continue;
+
+                    resolvedProperty.EnsureCppMethodNames();
+                    resolvedProperty.Name = resolvedProperty.Name.Replace('<', '_').Replace('>', '_').Replace('.', '_');
+                    continue;
+                }
+
+                string demangledPrefix = resolvedProperty.DemangledPrefix();
+                if (!demangledPrefix.EndsWith("_"))
+                    demangledPrefix += "_";
+                if (!demangledPrefixes.TryGetValue(demangledPrefix, out var idx))
+                {
+                    idx = 0;
+                    demangledPrefixes.Add(demangledPrefix, idx);
+                }
+                idx++;
+                resolvedProperty.Name = $"{demangledPrefix}{idx}";
+                demangledPrefixes[demangledPrefix] = idx;
+                resolvedProperty.DemangleMethods();
+            }
+
+            for (int i = 0; i < staticProperties.Count; i++)
+            {
+                ResolvedProperty resolvedProperty = staticProperties[i];
+                if (resolvedProperty.Name.isCSharpIdentifier())
+                {
+                    if (resolvedProperty.Name.isCppIdentifier())
+                        continue;
+
+                    resolvedProperty.EnsureCppMethodNames();
+                    resolvedProperty.Name = resolvedProperty.Name.Replace('<', '_').Replace('>', '_').Replace('.', '_');
+                    continue;
+                }
+
+                string demangledPrefix = resolvedProperty.DemangledPrefix();
+                if (!demangledPrefix.EndsWith("_"))
+                    demangledPrefix += "_";
+                if (!demangledPrefixes.TryGetValue(demangledPrefix, out var idx))
+                {
+                    idx = 0;
+                    demangledPrefixes.Add(demangledPrefix, idx);
+                }
+                idx++;
+                resolvedProperty.Name = $"{demangledPrefix}{idx}";
+                demangledPrefixes[demangledPrefix] = idx;
+                resolvedProperty.DemangleMethods();
+            }
+            // Demangle Events
+            for (int i = 0; i < instanceEvents.Count; i++)
+            {
+                ResolvedEvent resolvedEvent = instanceEvents[i];
+                if (resolvedEvent.Name.isCSharpIdentifier())
+                {
+                    if (resolvedEvent.Name.isCppIdentifier())
+                        continue;
+
+                    resolvedEvent.Name = resolvedEvent.Name.Replace('<', '_').Replace('>', '_').Replace('.', '_');
+                    continue;
+                }
+
+                string demangledPrefix = resolvedEvent.DemangledPrefix();
+                if (!demangledPrefix.EndsWith("_"))
+                    demangledPrefix += "_";
+                if (!demangledPrefixes.TryGetValue(demangledPrefix, out var idx))
+                {
+                    idx = 0;
+                    demangledPrefixes.Add(demangledPrefix, idx);
+                }
+                idx++;
+                resolvedEvent.Name = $"{demangledPrefix}{idx}";
+                demangledPrefixes[demangledPrefix] = idx;
+                resolvedEvent.DemangleMethods();
+            }
+            for (int i = 0; i < staticEvents.Count; i++)
+            {
+                ResolvedEvent resolvedEvent = staticEvents[i];
+                if (resolvedEvent.Name.isCSharpIdentifier())
+                {
+                    if (resolvedEvent.Name.isCppIdentifier())
+                        continue;
+
+                    resolvedEvent.Name = resolvedEvent.Name.Replace('<', '_').Replace('>', '_').Replace('.', '_');
+                    continue;
+                }
+
+                string demangledPrefix = resolvedEvent.DemangledPrefix();
+                if (!demangledPrefix.EndsWith("_"))
+                    demangledPrefix += "_";
+                if (!demangledPrefixes.TryGetValue(demangledPrefix, out var idx))
+                {
+                    idx = 0;
+                    demangledPrefixes.Add(demangledPrefix, idx);
+                }
+                idx++;
+                resolvedEvent.Name = $"{demangledPrefix}{idx}";
+                demangledPrefixes[demangledPrefix] = idx;
+                resolvedEvent.DemangleMethods();
+            }
+            // Demangle Methods
+            for (int i = 0;i<instanceMethods.Count;i++)
+            {
+                ResolvedMethod resolvedMethod = instanceMethods[i];
+                resolvedMethod.DemangleParams();
+                if (resolvedMethod.Name.isCSharpIdentifier())
+                {
+                    if (resolvedMethod.Name.isCppIdentifier())
+                        continue;
+                    
+                    resolvedMethod.Name = resolvedMethod.Name.Replace('<', '_').Replace('>', '_').Replace('.', '_');
+                    continue;
+                }
+
+                string demangledPrefix = resolvedMethod.DemangledPrefix();
+                if (!demangledPrefix.EndsWith("_"))
+                    demangledPrefix += "_";
+                if (!demangledPrefixes.TryGetValue(demangledPrefix, out var idx))
+                {
+                    idx = 0;
+                    demangledPrefixes.Add(demangledPrefix, idx);
+                }
+                idx++;
+                resolvedMethod.Name = $"{demangledPrefix}{idx}";
+                demangledPrefixes[demangledPrefix] = idx;
+            }
+
+            for (int i = 0; i < staticMethods.Count; i++)
+            {
+                ResolvedMethod resolvedMethod = staticMethods[i];
+                resolvedMethod.DemangleParams();
+                if (resolvedMethod.Name.isCSharpIdentifier())
+                {
+                    if (resolvedMethod.Name.isCppIdentifier())
+                        continue;
+
+                    resolvedMethod.Name = resolvedMethod.Name.Replace('<', '_').Replace('>', '_').Replace('.', '_');
+                    continue;
+                }
+
+                string demangledPrefix = resolvedMethod.DemangledPrefix();
+                if (!demangledPrefix.EndsWith("_"))
+                    demangledPrefix += "_";
+                if (!demangledPrefixes.TryGetValue(demangledPrefix, out var idx))
+                {
+                    idx = 0;
+                    demangledPrefixes.Add(demangledPrefix, idx);
+                }
+                idx++;
+                resolvedMethod.Name = $"{demangledPrefix}{idx}";
+                demangledPrefixes[demangledPrefix] = idx;
+            }
+
+            isDemangled = true;
+            // Add type as demangled
+            Demangler.demangledTypes.Add(this, demangledPrefixes);
+            // Resolve all types waiting for this type
+            if (!Demangler.demangleQueue.TryGetValue(this, out var demangleQueue))
+                return;
+            // remove from queue
+            Demangler.demangleQueue.Remove(this);
+
+            for (int i =0;i< demangleQueue.Count;i++)
+            {
+                demangleQueue[i].Demangle();
+            }
         }
     }
 }

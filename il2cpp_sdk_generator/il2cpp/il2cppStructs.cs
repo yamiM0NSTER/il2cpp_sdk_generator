@@ -624,6 +624,7 @@ namespace il2cpp_sdk_generator
         public const UInt32 TYPE_ATTRIBUTE_ABSTRACT = 0x00000080;
         public const UInt32 TYPE_ATTRIBUTE_SEALED = 0x00000100;
         public const UInt32 TYPE_ATTRIBUTE_SPECIAL_NAME = 0x00000400;
+        public const UInt32 TYPE_ATTRIBUTE_STATIC = TYPE_ATTRIBUTE_ABSTRACT | TYPE_ATTRIBUTE_SEALED;
 
         public const UInt32 TYPE_ATTRIBUTE_IMPORT = 0x00001000;
         public const UInt32 TYPE_ATTRIBUTE_SERIALIZABLE = 0x00002000;
@@ -668,5 +669,7 @@ namespace il2cpp_sdk_generator
         public const UInt32 ASSEMBLYREF_RETARGETABLE_FLAG = 0x00000100;
         public const UInt32 ASSEMBLYREF_ENABLEJITCOMPILE_TRACKING_FLAG = 0x00008000;
         public const UInt32 ASSEMBLYREF_DISABLEJITCOMPILE_OPTIMIZER_FLAG = 0x00004000;
+
+        public const UInt32 kInvalidIl2CppMethodSlot = 65535;
     }
 }

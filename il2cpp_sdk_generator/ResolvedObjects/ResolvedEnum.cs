@@ -14,6 +14,8 @@ namespace il2cpp_sdk_generator
         {
             typeDef = type;
             typeDefinitionIndex = idx;
+            Name = MetadataReader.GetString(typeDef.nameIndex);
+            Namespace = MetadataReader.GetString(typeDef.namespaceIndex);
         }
 
         public override void Resolve()
@@ -55,6 +57,63 @@ namespace il2cpp_sdk_generator
             code += "};\n".Indent(indent);
 
             return code;
+        }
+
+        public override string DemangledPrefix()
+        {
+            return GetVisibility() + "Enum";
+        }
+
+        public override void Demangle()
+        {
+            Dictionary<string, object> demangledValues = new Dictionary<string, object>();
+            int idx = 1;
+            foreach (var valuePair in values)
+            {
+                if (valuePair.Key.isCSharpIdentifier())
+                {
+                    if (valuePair.Key.isCppIdentifier())
+                    {
+                        demangledValues.Add(valuePair.Key, valuePair.Value);
+                        continue;
+                    }
+
+                    demangledValues.Add(valuePair.Key.Replace('<', '_').Replace('>', '_'), valuePair.Value);
+                    continue;
+                }
+
+                demangledValues.Add($"Value_{idx}", valuePair.Value);
+                idx++;
+            }
+
+            values = demangledValues;
+        }
+
+        public override Dictionary<string, Int32> Demangle(Dictionary<string, Int32> demangledPrefixesParent = null)
+        {
+            Dictionary<string, object> demangledValues = new Dictionary<string, object>();
+            int idx = 1;
+            foreach (var valuePair in values)
+            {
+                if (valuePair.Key.isCSharpIdentifier())
+                {
+                    if (valuePair.Key.isCppIdentifier())
+                    {
+                        demangledValues.Add(valuePair.Key, valuePair.Value);
+                        continue;
+                    }
+
+                    demangledValues.Add(valuePair.Key.Replace('<', '_').Replace('>', '_'), valuePair.Value);
+                    continue;
+                }
+
+                demangledValues.Add($"Value_{idx}", valuePair.Value);
+                idx++;
+            }
+
+            values = demangledValues;
+
+            return null;
         }
     }
 }
