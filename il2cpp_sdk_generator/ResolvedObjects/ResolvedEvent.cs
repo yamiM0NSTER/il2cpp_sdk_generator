@@ -55,19 +55,19 @@ namespace il2cpp_sdk_generator
             if (eventDef.add > -1)
             {
                 code += "// Add\n".Indent(indent);
-                code += add.ToCode(indent);
+                code += add.ToHeaderCode(indent);
             }
 
             if (eventDef.remove > -1)
             {
                 code += "// Remove\n".Indent(indent);
-                code += remove.ToCode(indent);
+                code += remove.ToHeaderCode(indent);
             }
 
             if (eventDef.raise > -1)
             {
                 code += "// Raise\n".Indent(indent);
-                code += raise.ToCode(indent);
+                code += raise.ToHeaderCode(indent);
             }
             
             return code;

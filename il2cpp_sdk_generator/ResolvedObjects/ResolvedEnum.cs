@@ -44,7 +44,7 @@ namespace il2cpp_sdk_generator
             isResolved = true;
         }
 
-        public override string ToCode(Int32 indent = 0)
+        public override string ToHeaderCode(Int32 indent = 0)
         {
             string code = "";
 

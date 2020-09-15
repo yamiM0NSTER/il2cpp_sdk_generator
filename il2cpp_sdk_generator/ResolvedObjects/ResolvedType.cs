@@ -44,9 +44,9 @@ namespace il2cpp_sdk_generator
             isResolved = true;
         }
 
-        public virtual string ToCode(Int32 indent = 0)
+        public virtual string ToHeaderCode(Int32 indent = 0)
         {
-            return "ResolvedType::ToCode";
+            return "ResolvedType::ToHeaderCode";
         }
 
         public string CppNamespace()
@@ -97,21 +97,16 @@ namespace il2cpp_sdk_generator
                 case il2cpp_Constants.TYPE_ATTRIBUTE_PUBLIC:
                 case il2cpp_Constants.TYPE_ATTRIBUTE_NESTED_PUBLIC:
                     return "Public";
-                    break;
                 case il2cpp_Constants.TYPE_ATTRIBUTE_NOT_PUBLIC:
                 case il2cpp_Constants.TYPE_ATTRIBUTE_NESTED_FAM_AND_ASSEM:
                 case il2cpp_Constants.TYPE_ATTRIBUTE_NESTED_ASSEMBLY:
                     return "Internal";
-                    break;
                 case il2cpp_Constants.TYPE_ATTRIBUTE_NESTED_PRIVATE:
                     return "Private";
-                    break;
                 case il2cpp_Constants.TYPE_ATTRIBUTE_NESTED_FAMILY:
                     return "Protected";
-                    break;
                 case il2cpp_Constants.TYPE_ATTRIBUTE_NESTED_FAM_OR_ASSEM:
                     return "ProtectedInternal";
-                    break;
             }
             return "";
         }
@@ -167,6 +162,20 @@ namespace il2cpp_sdk_generator
                 demangledPrefixes[demangledPrefix] = idx;
                 resolvedType.DemangleNestedTypeNames();
             }
+        }
+
+        public virtual string ToCppCode(Int32 indent = 0)
+        {
+            return "ResolvedType::ToCppCode";
+        }
+
+        public string NestedName(string name = "")
+        {
+            if (declaringType == null)
+                return $"{Name}::{name}";
+
+            name = $"{Name}::{name}";
+            return declaringType.NestedName(name);
         }
     }
 }

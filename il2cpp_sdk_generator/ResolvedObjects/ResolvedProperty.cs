@@ -46,13 +46,13 @@ namespace il2cpp_sdk_generator
             if (propDef.get> -1)
             {
                 code += "// Getter\n".Indent(indent);
-                code += getter.ToCode(indent);
+                code += getter.ToHeaderCode(indent);
             }
 
             if (propDef.set > -1)
             {
                 code += "// Setter\n".Indent(indent);
-                code += setter.ToCode(indent);
+                code += setter.ToHeaderCode(indent);
             }
             
             return code;
@@ -102,6 +102,7 @@ namespace il2cpp_sdk_generator
         {
             if (getter != null)
                 getter.Name = $"get_{Name}";
+
             if (setter != null)
             {
                 setter.Name = $"set_{Name}";

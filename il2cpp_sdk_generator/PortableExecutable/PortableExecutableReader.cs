@@ -109,14 +109,14 @@ namespace il2cpp_sdk_generator
             if (FindRegistrationByPattern(ref il2cpp.CodeRegistrationAddress, ref il2cpp.MetadataRegistrationAddress))
             {
                 Console.WriteLine("Managed to find Registrations by pattern");
-                Console.WriteLine($"MetadataRegistrationAddress: 0x{il2cpp.MetadataRegistrationAddress:X}");
-                Console.WriteLine($"CodeRegistrationAddress: 0x{il2cpp.CodeRegistrationAddress:X}");
+                Console.WriteLine($"MetadataRegistrationAddress: 0x{RVA.FromVA(il2cpp.MetadataRegistrationAddress):X}");
+                Console.WriteLine($"CodeRegistrationAddress: 0x{RVA.FromVA(il2cpp.CodeRegistrationAddress):X}");
             }
             else if (FindRegistrationbyStructs(ref il2cpp.CodeRegistrationAddress, ref il2cpp.MetadataRegistrationAddress))
             {
                 Console.WriteLine("Fall back to searching Registrations by structures");
-                Console.WriteLine($"MetadataRegistrationAddress: 0x{il2cpp.MetadataRegistrationAddress:X}");
-                Console.WriteLine($"CodeRegistrationAddress: 0x{il2cpp.CodeRegistrationAddress:X}");
+                Console.WriteLine($"MetadataRegistrationAddress: 0x{RVA.FromVA(il2cpp.MetadataRegistrationAddress):X}");
+                Console.WriteLine($"CodeRegistrationAddress: 0x{RVA.FromVA(il2cpp.CodeRegistrationAddress):X}");
             }
             else
             {
