@@ -17,6 +17,7 @@ namespace il2cpp_sdk_generator
         {
             propDef = propDefinition;
             Name = MetadataReader.GetString(propDef.nameIndex);
+            isMangled = Name.isCSharpIdentifier();
         }
 
         public void AssignMethod(Int32 idx, ResolvedMethod resolvedMethod)

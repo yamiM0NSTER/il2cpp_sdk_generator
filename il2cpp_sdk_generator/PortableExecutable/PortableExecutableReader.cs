@@ -537,6 +537,12 @@ namespace il2cpp_sdk_generator
 
             PortableExecutable.runtimeFunctions = reader.ReadArray<RUNTIME_FUNCTION>((int)dataDirectory.Size / typeof(RUNTIME_FUNCTION).GetSizeOf());
             Console.WriteLine($"PortableExecutable.runtimeFunctions[{PortableExecutable.runtimeFunctions.Length}]");
+            for(int i = 0;i< PortableExecutable.runtimeFunctions.Length;i++)
+            {
+                PortableExecutable.m_mapRuntimeFunctionPtrs.Add(VA.FromRVA(PortableExecutable.runtimeFunctions[i].BeginAddress), PortableExecutable.runtimeFunctions[i]);
+                CodeScanner.funcPtrs.Add(VA.FromRVA(PortableExecutable.runtimeFunctions[i].BeginAddress));
+            }
+            
             //foreach (var entry in PortableExecutable.exceptionTableEntries)
             //{
             //    Console.WriteLine($"[0x{VA.FromRVA(entry.BeginAddress):X8}]");

@@ -41,9 +41,11 @@ namespace il2cpp_sdk_generator
             il2cppReader.Read();
             il2cppReader.Process();
 
-            Demangler.Demangle();
             // TODO: Trusted references
-            //CodeScanner.Scan(peBytes);
+            CodeScanner.Scan(peBytes);
+
+            Demangler.Demangle();
+            
 
             CppOutput.Output();
 

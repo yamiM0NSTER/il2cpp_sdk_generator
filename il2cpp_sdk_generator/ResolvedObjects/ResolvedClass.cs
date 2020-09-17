@@ -24,7 +24,7 @@ namespace il2cpp_sdk_generator
         List<ResolvedMethod> instanceMethods = new List<ResolvedMethod>();
         List<ResolvedMethod> staticMethods = new List<ResolvedMethod>();
         Dictionary<Int32, ResolvedMethod> slottedMethods = new Dictionary<Int32, ResolvedMethod>();
-        List<ResolvedMethod> miMethods = new List<ResolvedMethod>();
+        public List<ResolvedMethod> miMethods = new List<ResolvedMethod>();
 
         public ResolvedClass(Il2CppTypeDefinition type, Int32 idx)
         {
@@ -32,6 +32,7 @@ namespace il2cpp_sdk_generator
             typeDefinitionIndex = idx;
             Name = MetadataReader.GetString(typeDef.nameIndex);
             Namespace = MetadataReader.GetString(typeDef.namespaceIndex);
+            isMangled = !Name.isCSharpIdentifier();
         }
 
         public override void Resolve()

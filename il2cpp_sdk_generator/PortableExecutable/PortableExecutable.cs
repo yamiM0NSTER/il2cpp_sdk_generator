@@ -24,5 +24,6 @@ namespace il2cpp_sdk_generator
 
         // Processed data
         public static Dictionary<string, IMAGE_SECTION_HEADER> m_mapSections = new Dictionary<string, IMAGE_SECTION_HEADER>();
+        public static Dictionary<ulong, RUNTIME_FUNCTION> m_mapRuntimeFunctionPtrs = new Dictionary<ulong, RUNTIME_FUNCTION>(); // VA's
     }
 }

@@ -89,7 +89,6 @@ namespace il2cpp_sdk_generator
             //}
 
             // TODO: Trusted references
-            return;
 
             int CntBefore = CodeScanner.funcPtrs.Count;
             for (int i =0;i< il2cpp.methodPointers.Length;i++)
@@ -101,7 +100,7 @@ namespace il2cpp_sdk_generator
                     continue;
 
                 CodeScanner.funcPtrs.Add(il2cpp.methodPointers[i]);
-                Console.WriteLine($"[0x{il2cpp.methodPointers[i]:X8}]");
+                //Console.WriteLine($"[0x{il2cpp.methodPointers[i]:X8}]");
             }
             for (int i = 0; i < il2cpp.reversePInvokeWrappers.Length; i++)
             {

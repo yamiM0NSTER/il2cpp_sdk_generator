@@ -23,7 +23,7 @@ namespace il2cpp_sdk_generator
         // Methods
         List<ResolvedMethod> instanceMethods = new List<ResolvedMethod>();
         List<ResolvedMethod> staticMethods = new List<ResolvedMethod>();
-        List<ResolvedMethod> miMethods = new List<ResolvedMethod>();
+        public List<ResolvedMethod> miMethods = new List<ResolvedMethod>();
 
         public ResolvedStruct(Il2CppTypeDefinition type, Int32 idx)
         {

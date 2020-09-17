@@ -14,6 +14,9 @@ namespace il2cpp_sdk_generator
         public List<ResolvedParameter> resolvedParameters = new List<ResolvedParameter>();
         public ResolvedType declaringType = null;
         public string MI_Name = "";
+        public List<ulong> refAddrs = new List<ulong>();
+        public List<ResolvedMethod> refMethods = new List<ResolvedMethod>();
+        public bool isReferenced { get; set; }
 
         public ResolvedMethod(Il2CppMethodDefinition methodDefinition, Int32 methodIdx)
         {
@@ -26,6 +29,9 @@ namespace il2cpp_sdk_generator
                 ResolvedParameter resolvedParameter = new ResolvedParameter(Metadata.parameterDefinitions[methodDef.parameterStart + i]);
                 resolvedParameters.Add(resolvedParameter);
             }
+            isMangled = !Name.isCSharpIdentifier();
+            if (isMangled)
+                isReferenced = false;
         }
 
         public string ToHeaderCode(Int32 indent = 0)
@@ -136,7 +142,14 @@ namespace il2cpp_sdk_generator
 
         public string DemangledPrefix()
         {
-            return $"m{StaticString()}_{VirtualString()}{AccessString()}{MetadataReader.GetSimpleTypeString(il2cpp.types[methodDef.returnType])}";
+            return $"{ReferencedString()}m{StaticString()}_{VirtualString()}{AccessString()}{MetadataReader.GetSimpleTypeString(il2cpp.types[methodDef.returnType])}";
+        }
+
+        public string ReferencedString()
+        {
+            if (isReferenced || !isMangled)
+                return "";
+            return "u";
         }
 
         public string VirtualString()
