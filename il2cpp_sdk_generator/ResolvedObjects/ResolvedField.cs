@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace il2cpp_sdk_generator
 {
-    class ResolvedField : ResolvedObject
+    public class ResolvedField : ResolvedObject
     {
         public Int32 declaringTypeDefIndex;
         public Int32 fieldIndex;

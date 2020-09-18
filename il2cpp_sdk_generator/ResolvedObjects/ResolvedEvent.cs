@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace il2cpp_sdk_generator
 {
-    class ResolvedEvent : ResolvedObject
+    public class ResolvedEvent : ResolvedObject
     {
         public Il2CppEventDefinition eventDef = null;
         public ResolvedMethod add = null;

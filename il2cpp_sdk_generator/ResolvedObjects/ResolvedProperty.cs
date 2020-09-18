@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace il2cpp_sdk_generator
 {
-    class ResolvedProperty : ResolvedObject
+    public class ResolvedProperty : ResolvedObject
     {
         public Il2CppPropertyDefinition propDef = null;
         public ResolvedMethod getter = null;

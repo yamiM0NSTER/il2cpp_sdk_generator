@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace il2cpp_sdk_generator
 {
-    class ResolvedStruct : ResolvedType
+    public class ResolvedStruct : ResolvedType
     {
         bool isGeneric = false;
         string genericTemplate = "";
@@ -538,6 +538,9 @@ namespace il2cpp_sdk_generator
                 resolvedMethod.Name = $"{demangledPrefix}{idx}";
                 demangledPrefixes[demangledPrefix] = idx;
             }
+
+
+            Rules.AssignResolvedObject(this);
 
             isDemangled = true;
             // Add type as demangled

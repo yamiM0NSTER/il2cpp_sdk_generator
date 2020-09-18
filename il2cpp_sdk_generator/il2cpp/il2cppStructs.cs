@@ -339,7 +339,7 @@ namespace il2cpp_sdk_generator
     }
 
     [StructLayout(LayoutKind.Explicit)]
-    class data
+    public class data
     {
         //    union
         //{
@@ -383,7 +383,7 @@ namespace il2cpp_sdk_generator
     }
 
     
-    class Il2CppType
+    public class Il2CppType
     {
         public data data;
 
@@ -443,7 +443,7 @@ namespace il2cpp_sdk_generator
         }
     }
 
-    enum Il2CppTypeEnum
+    public enum Il2CppTypeEnum
     {
         /// <summary>
         /// End of List

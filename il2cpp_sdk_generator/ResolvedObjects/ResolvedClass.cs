@@ -6,23 +6,23 @@ using System.Threading.Tasks;
 
 namespace il2cpp_sdk_generator
 {
-    class ResolvedClass : ResolvedType
+    public class ResolvedClass : ResolvedType
     {
         bool isGeneric = false;
         string genericTemplate = "";
         // Fields
-        List<ResolvedField> instanceFields = new List<ResolvedField>();
-        List<ResolvedField> staticFields = new List<ResolvedField>();
-        List<ResolvedField> constFields = new List<ResolvedField>();
+        public List<ResolvedField> instanceFields = new List<ResolvedField>();
+        public List<ResolvedField> staticFields = new List<ResolvedField>();
+        public List<ResolvedField> constFields = new List<ResolvedField>();
         // Properties
-        List<ResolvedProperty> instanceProperties = new List<ResolvedProperty>();
-        List<ResolvedProperty> staticProperties = new List<ResolvedProperty>();
+        public List<ResolvedProperty> instanceProperties = new List<ResolvedProperty>();
+        public List<ResolvedProperty> staticProperties = new List<ResolvedProperty>();
         // Events
-        List<ResolvedEvent> instanceEvents = new List<ResolvedEvent>();
-        List<ResolvedEvent> staticEvents = new List<ResolvedEvent>();
+        public List<ResolvedEvent> instanceEvents = new List<ResolvedEvent>();
+        public List<ResolvedEvent> staticEvents = new List<ResolvedEvent>();
         // Methods
-        List<ResolvedMethod> instanceMethods = new List<ResolvedMethod>();
-        List<ResolvedMethod> staticMethods = new List<ResolvedMethod>();
+        public List<ResolvedMethod> instanceMethods = new List<ResolvedMethod>();
+        public List<ResolvedMethod> staticMethods = new List<ResolvedMethod>();
         Dictionary<Int32, ResolvedMethod> slottedMethods = new Dictionary<Int32, ResolvedMethod>();
         public List<ResolvedMethod> miMethods = new List<ResolvedMethod>();
 
@@ -114,12 +114,14 @@ namespace il2cpp_sdk_generator
                 miMethods.Add(resolvedMethod);
                 if (propertyMethods.TryGetValue(i, out var resolvedProperty))
                 {
+                    resolvedMethod.isReferenced = true;
                     resolvedProperty.AssignMethod(i, resolvedMethod);
                     continue;
                 }
 
                 if (eventMethods.TryGetValue(i, out var resolvedEvent))
                 {
+                    resolvedMethod.isReferenced = true;
                     resolvedEvent.AssignMethod(i, resolvedMethod);
                     continue;
                 }
@@ -374,6 +376,38 @@ namespace il2cpp_sdk_generator
             }
         }
 
+        private static int SortMethods(ResolvedMethod m1, ResolvedMethod m2)
+        {
+            if (m1 == null)
+            {
+                // If m1 is null and y is null, they're
+                // equal.
+                if (m2 == null)
+                    return 0;
+                
+                // If m1 is null and y is not null, y
+                // is greater.
+                return -1;    
+            }
+
+            // If m1 is not null and m2 is null, m1 is greater.
+            if (m2 == null)
+                return 1;
+
+            if (m1.isMangled && !m2.isMangled)
+                return 1;
+            else if (!m1.isMangled && m2.isMangled)
+                return -1;
+
+            //if (m1.Name.StartsWith("um") && !m2.Name.StartsWith("um"))
+            //    return 1;
+            //else if (!m1.Name.StartsWith("um") && m2.Name.StartsWith("um"))
+            //    return -1;
+            
+            // Sort strings with ordinary string comparison.
+            return m1.Name.CompareTo(m2.Name);
+        }
+
         public override void Demangle()
         {
             if (isDemangled)
@@ -532,6 +566,7 @@ namespace il2cpp_sdk_generator
                 demangledPrefixes[demangledPrefix] = idx;
                 resolvedEvent.DemangleMethods();
             }
+
             // Demangle Methods
             for (int i = 0;i<instanceMethods.Count;i++)
             {
@@ -584,6 +619,11 @@ namespace il2cpp_sdk_generator
                 resolvedMethod.Name = $"{demangledPrefix}{idx}";
                 demangledPrefixes[demangledPrefix] = idx;
             }
+
+            instanceMethods.Sort(SortMethods);
+            staticMethods.Sort(SortMethods);
+
+            Rules.AssignResolvedObject(this);
 
             isDemangled = true;
             // Add type as demangled

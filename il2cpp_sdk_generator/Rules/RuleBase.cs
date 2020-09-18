@@ -2,13 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace il2cpp_sdk_generator
 {
-    public class ResolvedObject
+    public class RuleBase : IRule
     {
-        public string Name = null;
 
-        public bool isMangled { get; set; }
     }
 }

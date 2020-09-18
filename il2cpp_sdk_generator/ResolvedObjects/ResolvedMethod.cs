@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace il2cpp_sdk_generator
 {
-    class ResolvedMethod : ResolvedObject
+    public class ResolvedMethod : ResolvedObject
     {
         public Int32 methodIndex;
         public Il2CppMethodDefinition methodDef = null;
@@ -142,7 +142,15 @@ namespace il2cpp_sdk_generator
 
         public string DemangledPrefix()
         {
-            return $"{ReferencedString()}m{StaticString()}_{VirtualString()}{AccessString()}{MetadataReader.GetSimpleTypeString(il2cpp.types[methodDef.returnType])}";
+            string prefix = $"{ReferencedString()}m{StaticString()}_{VirtualString()}{AccessString()}{MetadataReader.GetSimpleTypeString(returnType)}";
+            for(int i =0;i<resolvedParameters.Count;i++)
+            {
+                if (!prefix.EndsWith("_"))
+                    prefix += "_";
+
+                prefix += MetadataReader.GetSimpleTypeString(resolvedParameters[i].type);
+            }
+            return prefix;
         }
 
         public string ReferencedString()

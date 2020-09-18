@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace il2cpp_sdk_generator
 {
-    class ResolvedType : ResolvedObject
+    public class ResolvedType : ResolvedObject
     {
         protected bool isResolved = false;
         public Int32 typeDefinitionIndex;

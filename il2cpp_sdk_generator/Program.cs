@@ -18,7 +18,10 @@ namespace il2cpp_sdk_generator
 
             if (!GetFilePaths())
                 return;
-            
+
+            // Get all rules
+            Rules.Initialize();
+
             // Metadata was selected
             byte[] metadataBytes = File.ReadAllBytes(MetadataPath);
             Console.WriteLine($"metadataBytes: {metadataBytes.Length}");
@@ -45,7 +48,12 @@ namespace il2cpp_sdk_generator
             CodeScanner.Scan(peBytes);
 
             Demangler.Demangle();
-            
+
+            // Rules
+            Rules.Apply();
+
+            // Demangle again to clean up?
+            //Demangler.Demangle();
 
             CppOutput.Output();
 

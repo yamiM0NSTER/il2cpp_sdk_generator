@@ -49,6 +49,7 @@
   <ItemGroup>
     <Compile Include="CodeScanner\CodeScanner.cs" />
     <Compile Include="Demangler\Demangler.cs" />
+    <Compile Include="Extensions\Assembly.cs" />
     <Compile Include="Extensions\BinaryReader.cs" />
     <Compile Include="Extensions\ObjectDump.cs" />
     <Compile Include="Extensions\String.cs" />
@@ -79,6 +80,9 @@
     <Compile Include="ResolvedObjects\ResolvedProperty.cs" />
     <Compile Include="ResolvedObjects\ResolvedStruct.cs" />
     <Compile Include="ResolvedObjects\ResolvedType.cs" />
+    <Compile Include="Rules\IRule.cs" />
+    <Compile Include="Rules\RuleBase.cs" />
+    <Compile Include="Rules\Rules.cs" />
     <Compile Include="Utils\ArrayBuilder.cs" />
     <Compile Include="Utils\BinaryPattern.cs" />
     <Compile Include="Utils\Offsets.cs" />

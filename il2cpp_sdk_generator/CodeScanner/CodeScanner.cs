@@ -256,7 +256,7 @@ namespace il2cpp_sdk_generator
                     //    continue;
 
                     var methodPtr = il2cpp.methodPointers[resolvedClass.miMethods[i].methodDef.methodIndex];
-                    if (!resolvedClass.miMethods[i].isMangled)
+                    if (!resolvedClass.miMethods[i].isMangled || resolvedClass.miMethods[i].isReferenced)
                     {
                         if (!mapTrustedMethods.ContainsKey(methodPtr))
                         {
@@ -292,7 +292,7 @@ namespace il2cpp_sdk_generator
                     //    continue;
 
                     var methodPtr = il2cpp.methodPointers[resolvedStruct.miMethods[i].methodDef.methodIndex];
-                    if (!resolvedStruct.miMethods[i].isMangled)
+                    if (!resolvedStruct.miMethods[i].isMangled || resolvedStruct.miMethods[i].isReferenced)
                     {
                         if (!mapTrustedMethods.ContainsKey(methodPtr))
                         {

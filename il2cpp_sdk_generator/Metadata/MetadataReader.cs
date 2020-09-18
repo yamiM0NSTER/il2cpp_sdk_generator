@@ -11,7 +11,7 @@ using EncodedMethodIndex = System.UInt32;
 
 namespace il2cpp_sdk_generator
 {
-    class MetadataReader
+    public class MetadataReader
     {
         private static BinaryReader reader;
         private static MemoryStream stream;

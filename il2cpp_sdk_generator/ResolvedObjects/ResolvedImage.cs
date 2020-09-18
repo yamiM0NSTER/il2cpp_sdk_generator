@@ -6,7 +6,7 @@ using System.Text;
 
 namespace il2cpp_sdk_generator
 {
-    class ResolvedImage : ResolvedObject
+    public class ResolvedImage : ResolvedObject
     {
         public Dictionary<string, ResolvedNamespace> Namespaces = new Dictionary<string, ResolvedNamespace>();
 

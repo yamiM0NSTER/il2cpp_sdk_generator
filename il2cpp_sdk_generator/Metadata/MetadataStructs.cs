@@ -113,7 +113,7 @@ namespace il2cpp_sdk_generator
         public int32_t exportedTypeDefinitionsCount;
     }
 
-    class Il2CppImageDefinition
+    public class Il2CppImageDefinition
     {
         public StringIndex nameIndex;
         public AssemblyIndex assemblyIndex;
@@ -131,7 +131,7 @@ namespace il2cpp_sdk_generator
         public uint32_t customAttributeCount;
     }
 
-    class Il2CppTypeDefinition
+    public class Il2CppTypeDefinition
     {
         public StringIndex nameIndex;
         public StringIndex namespaceIndex;
@@ -195,7 +195,7 @@ namespace il2cpp_sdk_generator
         }
     }
 
-    class Il2CppMethodDefinition
+    public class Il2CppMethodDefinition
     {
         public StringIndex nameIndex;
         public TypeDefinitionIndex declaringType;
@@ -214,7 +214,7 @@ namespace il2cpp_sdk_generator
         public uint16_t parameterCount;
     }
 
-    class Il2CppEventDefinition
+    public class Il2CppEventDefinition
     {
         public StringIndex nameIndex;
         public TypeIndex typeIndex;
@@ -230,7 +230,7 @@ namespace il2cpp_sdk_generator
         public FieldIndex fieldIndex; // local offset into type fields
     }
 
-    class Il2CppParameterDefinition
+    public class Il2CppParameterDefinition
     {
         public StringIndex nameIndex;
         public uint32_t token;
@@ -244,7 +244,7 @@ namespace il2cpp_sdk_generator
         public DefaultValueDataIndex dataIndex;
     }
 
-    class Il2CppFieldDefinition
+    public class Il2CppFieldDefinition
     {
         public StringIndex nameIndex;
         public TypeIndex typeIndex;
@@ -258,7 +258,7 @@ namespace il2cpp_sdk_generator
         public DefaultValueDataIndex dataIndex;
     }
 
-    class Il2CppPropertyDefinition
+    public class Il2CppPropertyDefinition
     {
         public StringIndex nameIndex;
         public MethodIndex get;

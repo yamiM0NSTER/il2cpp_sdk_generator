@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace il2cpp_sdk_generator
 {
-    class ResolvedParameter : ResolvedObject
+    public class ResolvedParameter : ResolvedObject
     {
         public Il2CppParameterDefinition paramDef = null;
         public Il2CppType type = null;
