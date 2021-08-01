@@ -17,7 +17,10 @@ namespace il2cpp_sdk_generator
         {
             fieldDef = fDef;
             type = il2cpp.types[fieldDef.typeIndex];
-            Name = MetadataReader.GetString(fieldDef.nameIndex);
+            string name = MetadataReader.GetString(fieldDef.nameIndex);
+            isMangled = !name.isCSharpIdentifier();
+            FixCppMacros(ref name);
+            Name = name;
             declaringTypeDefIndex = declaringTypeDefIdx;
             fieldIndex = fieldIdx;
         }
@@ -38,6 +41,20 @@ namespace il2cpp_sdk_generator
             }
         }
 
+        static string[] macros =
+            {
+                "far",
+                "near",
+            };
+
+        void FixCppMacros(ref string fieldName)
+        {
+            if (macros.Contains(fieldName))
+            {
+                fieldName = $"_{fieldName}";
+            }
+        }
+
         public string ToCode(Int32 indent)
         {
             string code = "";
@@ -46,14 +63,21 @@ namespace il2cpp_sdk_generator
 
             string TypeString = MetadataReader.GetTypeString(type);
 
-            code += $"{TypeString} {Name}; // 0x{il2cppReader.GetFieldOffset(declaringTypeDefIndex, fieldIndex):X}\n".Indent(indent);
+            code += $"{TypeString} {Name.CSharpToCppIdentifier()}; // 0x{il2cppReader.GetFieldOffset(declaringTypeDefIndex, fieldIndex):X}\n".Indent(indent);
 
             return code;
         }
 
         public string DemangledPrefix()
         {
-            return $"f_{AccessString()}{MetadataReader.GetSimpleTypeString(type)}";
+            return $"f_{StaticString()}{AccessString()}{MetadataReader.GetSimpleTypeString(type)}";
+        }
+
+        public string StaticString()
+        {
+            if (isStatic)
+                return "Static";
+            return "";
         }
 
         public string AccessString()

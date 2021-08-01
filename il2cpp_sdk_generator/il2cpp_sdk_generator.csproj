@@ -45,6 +45,10 @@
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
+    <Reference Include="Vrchat.Rules, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\Vrchat.Rules\Vrchat.Rules\bin\Debug\Vrchat.Rules.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CodeScanner\CodeScanner.cs" />
@@ -71,6 +75,8 @@
     <Compile Include="ResolvedObjects\ResolvedEnum.cs" />
     <Compile Include="ResolvedObjects\ResolvedEvent.cs" />
     <Compile Include="ResolvedObjects\ResolvedField.cs" />
+    <Compile Include="ResolvedObjects\ResolvedGenericClass.cs" />
+    <Compile Include="ResolvedObjects\Resolvedil2CppGenericClass.cs" />
     <Compile Include="ResolvedObjects\ResolvedImage.cs" />
     <Compile Include="ResolvedObjects\ResolvedInterface.cs" />
     <Compile Include="ResolvedObjects\ResolvedMethod.cs" />
@@ -83,6 +89,7 @@
     <Compile Include="Rules\IRule.cs" />
     <Compile Include="Rules\RuleBase.cs" />
     <Compile Include="Rules\Rules.cs" />
+    <Compile Include="Simplify\TypeBlacklist.cs" />
     <Compile Include="Utils\ArrayBuilder.cs" />
     <Compile Include="Utils\BinaryPattern.cs" />
     <Compile Include="Utils\Offsets.cs" />

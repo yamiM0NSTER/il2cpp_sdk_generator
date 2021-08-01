@@ -48,6 +48,10 @@ namespace il2cpp_sdk_generator
         {
             return "".PadLeft(indent) + str;
         }
-        
+
+        public static string CSharpToCppIdentifier(this string str)
+        {
+            return str.Replace('<', '_').Replace('>', '_').Replace('.', '_');
+        }
     }
 }

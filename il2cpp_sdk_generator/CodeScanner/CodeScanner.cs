@@ -5,18 +5,49 @@ using Iced.Intel;
 
 namespace il2cpp_sdk_generator
 {
-    class CodeScanner
+    public class CodeScanner
     {
         static Byte[] m_peBytes;
         public static List<ulong> funcPtrs = new List<ulong>(); // function VA's
         static Dictionary<ulong, ulong> m_refs = new Dictionary<ulong, ulong>(); // reference VA's
-        static Dictionary<ulong, List<ulong>> m_mapFunctionReferences = new Dictionary<ulong, List<ulong>>(); // reference VA's
-        static Dictionary<ulong, List<ulong>> m_mapReferencesToFunction = new Dictionary<ulong, List<ulong>>(); // reference VA's
+        public static Dictionary<ulong, List<ulong>> m_mapFunctionReferences = new Dictionary<ulong, List<ulong>>(); // reference VA's
+        public static Dictionary<ulong, List<ulong>> m_mapReferencesToFunction = new Dictionary<ulong, List<ulong>>(); // reference VA's
         static IMAGE_SECTION_HEADER textSection;
         static IMAGE_SECTION_HEADER il2cppSection;
 
+        public static ulong Delegate_CombineMethodPtr;
+
         public static void Scan(Byte[] bytes)
         {
+            // Get Callback parent type
+            for (int i = 0; i < Metadata.resolvedTypes.Length; i++)
+            {
+                if (Metadata.resolvedTypes[i].isNested)
+                    continue;
+
+                if (Metadata.resolvedTypes[i].Name != "Delegate")
+                    continue;
+
+                if (Metadata.resolvedTypes[i].Namespace != "System")
+                    continue;
+
+
+                ResolvedClass resolvedClass = Metadata.resolvedTypes[i] as ResolvedClass;
+
+                for(int k =0;k< resolvedClass.miMethods.Count;k++)
+                {
+                    if (resolvedClass.miMethods[k].Name != "Combine")
+                        continue;
+                    if (resolvedClass.miMethods[k].resolvedParameters.Count != 2)
+                        continue;
+
+                    Delegate_CombineMethodPtr = il2cpp.methodPointers[resolvedClass.miMethods[k].methodDef.methodIndex];
+                    break;
+                }
+                //multicastDelegateType = Metadata.resolvedTypes[i];
+                break;
+            }
+
             m_peBytes = bytes;
 
             ScanTextSection();
@@ -30,23 +61,82 @@ namespace il2cpp_sdk_generator
                 m_mapReferencesToFunction.Add(funcPtrs[i], new List<ulong>());
             }
 
+
+
+            RUNTIME_FUNCTION runtimeFunc = null;//PortableExecutable.m_mapRuntimeFunctionPtrs
+            bool bFoundRuntimeFunc = PortableExecutable.m_mapRuntimeFunctionPtrs.TryGetValue(funcPtrs[0], out runtimeFunc);
+            ulong funcEnd = 0;
+            if (bFoundRuntimeFunc)
+                funcEnd = VA.FromRVA(runtimeFunc.EndAddress);
+
             var curFunc = funcPtrs[0];
             var nextFunc = funcPtrs[1];
             int funcPtrNum = 2;
             foreach (var pair in m_refs)
             {
-                if(pair.Key >= nextFunc)
+                // Next func
+                if(bFoundRuntimeFunc && pair.Key > funcEnd)
                 {
                     curFunc = nextFunc;
-                    if (funcPtrNum < funcPtrs.Count)
-                        nextFunc = funcPtrs[funcPtrNum];
+                    if (curFunc == 0x181E404E0)
+                    {
+
+                    }
+                    //curFunc = funcPtrs.FirstOrDefault(ptr => ptr > funcEnd);
+                    bFoundRuntimeFunc = PortableExecutable.m_mapRuntimeFunctionPtrs.TryGetValue(curFunc, out runtimeFunc);
+                    if (bFoundRuntimeFunc)
+                    {
+                        funcEnd = VA.FromRVA(runtimeFunc.EndAddress);
+                        nextFunc = GetNextFunc(ref funcPtrNum, funcEnd);
+                        //nextFunc = funcPtrs.FirstOrDefault(ptr => ptr > funcEnd);
+                    }
                     else
-                        nextFunc = UInt64.MaxValue;
-                    funcPtrNum++;
+                    {
+                        nextFunc = GetNextFunc(ref funcPtrNum, curFunc);
+                        //nextFunc = funcPtrs.FirstOrDefault(ptr => ptr > curFunc);
+                    }
+                    //if (nextFunc == 0)
+                    //    nextFunc = UInt64.MaxValue;
+                }
+                else if(!bFoundRuntimeFunc && pair.Key >= nextFunc)
+                {
+                    curFunc = nextFunc;
+                    if (curFunc == 0x181E404E0)
+                    {
+
+                    }
+                    bFoundRuntimeFunc = PortableExecutable.m_mapRuntimeFunctionPtrs.TryGetValue(curFunc, out runtimeFunc);
+                    if (bFoundRuntimeFunc)
+                    {
+                        funcEnd = VA.FromRVA(runtimeFunc.EndAddress);
+                        nextFunc = GetNextFunc(ref funcPtrNum, funcEnd);
+                        //nextFunc = funcPtrs.FirstOrDefault(ptr => ptr > funcEnd);
+                    }
+                    else
+                    {
+                        nextFunc = GetNextFunc(ref funcPtrNum, curFunc);
+                        //nextFunc = funcPtrs.FirstOrDefault(ptr => ptr > curFunc);
+                    }
+                    //if (nextFunc == 0)
+                    //    nextFunc = UInt64.MaxValue;
+
+                    //nextFunc = funcPtrs.FirstOrDefault(ptr => ptr > curFunc);
+
+                    
+                    //if (funcPtrNum < funcPtrs.Count)
+                    //    nextFunc = funcPtrs[funcPtrNum];
+                    //else
+                    //    nextFunc = UInt64.MaxValue;
+                    //funcPtrNum++;
                 }
 
                 m_mapFunctionReferences[curFunc].Add(pair.Value);
                 m_mapReferencesToFunction[pair.Value].Add(curFunc);
+
+                if (curFunc == 0x181E404E0)
+                {
+
+                }
             }
 
             Console.WriteLine($"Functions[{funcPtrs.Count}]:");
@@ -69,6 +159,188 @@ namespace il2cpp_sdk_generator
             ResolveTrustedRefs();
         }
         
+        static ulong GetNextFunc(ref int curIdx, ulong higherThan = 0)
+        {
+            ulong candidate = 0;
+
+            if(curIdx >= funcPtrs.Count)
+                return UInt64.MaxValue;
+
+            do
+            {
+                candidate = funcPtrs[curIdx];
+                curIdx++;
+                if (candidate > higherThan)
+                    return candidate;
+            }
+            while (curIdx < funcPtrs.Count);
+            //funcPtrs[curIdx];
+            return UInt64.MaxValue;
+        }
+
+        public static List<ulong> ScanRegionForReferences(ulong va, ulong len)
+        {
+            List<ulong> refs = new List<ulong>();
+            // Store last 10 instructions
+            List<Instruction> instructionHistory = new List<Instruction>();
+
+            var codeReader = new ByteArrayCodeReader(m_peBytes, (int)Offset.FromVA(va), (int)len);
+            var decoder = Decoder.Create(64, codeReader);
+            decoder.IP = va;
+            ulong EndRip = va+len;
+
+            while (decoder.IP < EndRip)
+            {
+                // The method allocates an uninitialized element at the end of the list and
+                // returns a reference to it which is initialized by Decode().
+                ulong addr = decoder.IP;
+                decoder.Decode(out var instruction);
+                instructionHistory.Add(instruction);
+                if (instructionHistory.Count > 10)
+                    instructionHistory.RemoveAt(0);
+                if (instruction.Mnemonic == Mnemonic.Call)
+                {
+                    if (instruction.Op0Kind == OpKind.Memory || instruction.Op0Kind == OpKind.Register)
+                        continue;
+
+                    ulong targetAddr = instruction.NearBranch64;
+
+                    if (targetAddr == Delegate_CombineMethodPtr)
+                    {
+                        if (instructionHistory[0].Mnemonic == Mnemonic.Mov && instructionHistory[0].Op0Register == Register.R8 && instructionHistory[0].MemoryBase == Register.RIP)
+                        {
+                            // TODO: see what can be done when instruction refers to register eg. RAX+10
+
+                            ulong delVA = instructionHistory[0].IPRelativeMemoryAddress;
+                            if (il2cpp.mapMethodPtrsByMetadataUsages.TryGetValue(delVA, out var val))
+                            {
+                                refs.Add(val);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (instructionHistory.Count > 4 && instructionHistory[4].Mnemonic == Mnemonic.Mov && instructionHistory[4].Op0Register == Register.R8 && instructionHistory[4].MemoryBase == Register.RIP)
+                        {
+                            // TODO: see what can be done when instruction refers to register eg. RAX+10
+
+                            ulong methodVA = instructionHistory[4].IPRelativeMemoryAddress;
+
+                            if (il2cpp.mapMethodPtrsByMetadataUsages.TryGetValue(methodVA, out var val))
+                            {
+                                refs.Add(val);
+                            }
+
+                            //var offset = Offset.FromVA(va);
+                            //il2cppReader.stream.Position = (long)offset;
+                            //var MI_Addr = il2cppReader.reader.Read<ulong>();
+                        }
+                    }
+
+
+                    //if (!(targetAddr >= beginIP && targetAddr < EndRip) && !(targetAddr >= textBeginIP && targetAddr < textEndRip))
+                    //{
+                    //    Console.WriteLine($"[0x{addr:X8}] {instruction.ToString()} {instruction.Op0Kind} {instruction.IsCallNear}");
+                    //    continue;
+                    //}
+                    //if (targetAddr == 0x00000000)
+                    //    Console.WriteLine($"[0x{addr:X8}] {instruction.ToString()} {instruction.Op0Kind}");
+
+                    //if (!funcPtrs.Contains(targetAddr))
+                    {
+                        //Console.WriteLine($"[0x{addr:X8}] {instruction.ToString()} {instruction.Op0Kind}");
+                        //funcPtrs.Add(targetAddr);
+                        refs.Add(targetAddr);
+                    }
+                    //m_refs.Add(addr, targetAddr);
+                }
+                else if (instruction.Mnemonic == Mnemonic.Jmp)
+                {
+                    if (instruction.Op0Kind == OpKind.Memory || instruction.Op0Kind == OpKind.Register)
+                        continue;
+
+                    if (instruction.OpCode.Code == Code.Jmp_rel8_64 || instruction.OpCode.Code == Code.Jmp_rm64)
+                        continue;
+
+                    if (instruction.OpCode.Code != Code.Jmp_rel32_64)
+                    {
+                        Console.WriteLine($"[0x{addr:X8}] {instruction.ToString()} {instruction.Op0Kind} {instruction.OpCode.Code.ToString()}");
+                        continue;
+                    }
+
+                    ulong targetAddr = instruction.NearBranch64;
+                    //if (!(targetAddr >= beginIP && targetAddr < endRip) && !(targetAddr >= textBeginIP && targetAddr < textEndRip))
+                    //{
+                    //    Console.WriteLine($"[0x{addr:X8}] {instruction.ToString()} {instruction.Op0Kind} {instruction.IsCallNear}");
+                    //    continue;
+                    //}
+                    // TODO: ignore addresses outside of range
+                    //if (targetAddr == 0x169E4EA10)
+                    //    Console.WriteLine($"[0x{addr:X8}] {instruction.ToString()} {instruction.Op0Kind}");
+
+                    //if (!funcPtrs.Contains(targetAddr))
+                    {
+                        //Console.WriteLine($"[0x{addr:X8}] {instruction.ToString()} {instruction.Op0Kind} {instruction.OpCode.Code.ToString()}");
+                        //funcPtrs.Add(targetAddr);
+                        refs.Add(targetAddr);
+                    }
+                    //m_refs.Add(addr, targetAddr);
+                }
+                else if (instruction.Mnemonic == Mnemonic.Mov) // stringliterals
+                {
+                    if (instruction.Op1Kind == OpKind.Memory && instruction.IsIPRelativeMemoryOperand)
+                    {
+                        var movTarget = instruction.IPRelativeMemoryAddress;
+
+                        if (il2cpp.mapStringLiteralPtrsByMetadataUsages.ContainsKey(movTarget))
+                        {
+                            refs.Add(movTarget);
+                        }
+                    }
+
+                }
+            }
+
+            return refs;
+        }
+
+        public static List<string> ScanRegionForStringLiterals(ulong va, ulong len)
+        {
+            List<string> literals = new List<string>();
+            // Store last 10 instructions
+            List<Instruction> instructionHistory = new List<Instruction>();
+
+            var codeReader = new ByteArrayCodeReader(m_peBytes, (int)Offset.FromVA(va), (int)len);
+            var decoder = Decoder.Create(64, codeReader);
+            decoder.IP = va;
+            ulong EndRip = va + len;
+
+            while (decoder.IP < EndRip)
+            {
+                // The method allocates an uninitialized element at the end of the list and
+                // returns a reference to it which is initialized by Decode().
+                ulong addr = decoder.IP;
+                decoder.Decode(out var instruction);
+
+                if (instruction.Mnemonic == Mnemonic.Mov) // stringliterals
+                {
+                    if (instruction.Op1Kind == OpKind.Memory && instruction.IsIPRelativeMemoryOperand)
+                    {
+                        var movTarget = instruction.IPRelativeMemoryAddress;
+
+                        if (il2cpp.mapStringLiteralPtrsByMetadataUsages.ContainsKey(movTarget))
+                        {
+                            literals.Add(MetadataReader.GetStringLiteralFromIndex(il2cpp.mapStringLiteralPtrsByMetadataUsages[movTarget]));
+                        }
+                    }
+                }
+            }
+
+            return literals;
+        }
+
+
+
         static void ScanTextSection()
         {
             if (!PortableExecutable.m_mapSections.TryGetValue("il2cpp", out var il2cppSection))
@@ -76,6 +348,9 @@ namespace il2cpp_sdk_generator
 
             if (!PortableExecutable.m_mapSections.TryGetValue(".text", out var textSection))
                 return;
+
+            // Store last 10 instructions
+            List<Instruction> instructionHistory = new List<Instruction>();
 
             var codeReader = new ByteArrayCodeReader(m_peBytes, (int)textSection.PointerToRawData, (int)textSection.SizeOfRawData);
             var decoder = Decoder.Create(64, codeReader);
@@ -91,12 +366,21 @@ namespace il2cpp_sdk_generator
                 // returns a reference to it which is initialized by Decode().
                 ulong addr = decoder.IP;
                 decoder.Decode(out var instruction);
+                instructionHistory.Add(instruction);
+                if (instructionHistory.Count > 10)
+                    instructionHistory.RemoveAt(0);
                 if (instruction.Mnemonic == Mnemonic.Call)
                 {
                     if (instruction.Op0Kind == OpKind.Memory || instruction.Op0Kind == OpKind.Register)
                         continue;
 
                     ulong targetAddr = instruction.NearBranch64;
+
+                    if(targetAddr == Delegate_CombineMethodPtr)
+                    {
+
+                    }
+                    //
                     if (!(targetAddr >= il2cppBeginIP && targetAddr < il2cppEndRip) && !(targetAddr >= textBeginIP && targetAddr < textEndRip))
                     {
                         Console.WriteLine($"[0x{addr:X8}] {instruction.ToString()} {instruction.Op0Kind} {instruction.IsCallNear}");
@@ -156,6 +440,9 @@ namespace il2cpp_sdk_generator
             if (!PortableExecutable.m_mapSections.TryGetValue(".text", out var textSection))
                 return;
 
+            // Store last 10 instructions
+            List<Instruction> instructionHistory = new List<Instruction>();
+
             var codeReader = new ByteArrayCodeReader(m_peBytes, (int)il2cppSection.PointerToRawData, (int)il2cppSection.SizeOfRawData);
             var decoder = Decoder.Create(64, codeReader);
             ulong beginIP = il2cppSection.VirtualAddress + PortableExecutable.imageOptionalHeader64.ImageBase;
@@ -170,13 +457,59 @@ namespace il2cpp_sdk_generator
                 // returns a reference to it which is initialized by Decode().
                 ulong addr = decoder.IP;
                 decoder.Decode(out var instruction);
+                instructionHistory.Add(instruction);
+                if (instructionHistory.Count > 10)
+                    instructionHistory.RemoveAt(0);
                 if (instruction.Mnemonic == Mnemonic.Call)
                 {
                     if (instruction.Op0Kind == OpKind.Memory || instruction.Op0Kind == OpKind.Register)
                         continue;
 
                     ulong targetAddr = instruction.NearBranch64;
-                    //instruction
+
+                    if (targetAddr == Delegate_CombineMethodPtr)
+                    {
+                        if(instructionHistory[0].Mnemonic == Mnemonic.Mov && instructionHistory[0].Op0Register == Register.R8 && instructionHistory[0].MemoryBase == Register.RIP)
+                        {
+                            // TODO: see what can be done when instruction refers to register eg. RAX+10
+
+                            ulong va = instructionHistory[0].IPRelativeMemoryAddress;
+                            if(il2cpp.mapMethodPtrsByMetadataUsages.TryGetValue(va, out var val))
+                            {
+                                // TODO: maybe add as Delegate usage idk
+                                if (!m_refs.ContainsKey(instructionHistory[0].IP))
+                                {
+                                    m_refs.Add(instructionHistory[0].IP, val);
+                                    funcPtrs.Add(val);
+                                }
+                            }
+
+                            //var offset = Offset.FromVA(va);
+                            //il2cppReader.stream.Position = (long)offset;
+                            //var MI_Addr = il2cppReader.reader.Read<ulong>();
+                        }
+                    }
+                    else
+                    {
+                        if (instructionHistory.Count > 4 && instructionHistory[4].Mnemonic == Mnemonic.Mov && instructionHistory[4].Op0Register == Register.R8 && instructionHistory[4].MemoryBase == Register.RIP)
+                        {
+                            // TODO: see what can be done when instruction refers to register eg. RAX+10
+
+                            ulong va = instructionHistory[4].IPRelativeMemoryAddress;
+
+                            if (il2cpp.mapMethodPtrsByMetadataUsages.TryGetValue(va, out var val))
+                            {
+                                // TODO: maybe add as Delegate usage idk
+                                m_refs.Add(instructionHistory[4].IP, val);
+                                funcPtrs.Add(val);
+                            }
+
+                            //var offset = Offset.FromVA(va);
+                            //il2cppReader.stream.Position = (long)offset;
+                            //var MI_Addr = il2cppReader.reader.Read<ulong>();
+                        }
+                    }
+
 
                     if (!(targetAddr >= beginIP && targetAddr < endRip) && !(targetAddr >= textBeginIP && targetAddr < textEndRip))
                     {
@@ -256,6 +589,7 @@ namespace il2cpp_sdk_generator
                     //    continue;
 
                     var methodPtr = il2cpp.methodPointers[resolvedClass.miMethods[i].methodDef.methodIndex];
+                    resolvedClass.miMethods[i].methodPtr = methodPtr;
                     if (!resolvedClass.miMethods[i].isMangled || resolvedClass.miMethods[i].isReferenced)
                     {
                         if (!mapTrustedMethods.ContainsKey(methodPtr))
@@ -292,6 +626,7 @@ namespace il2cpp_sdk_generator
                     //    continue;
 
                     var methodPtr = il2cpp.methodPointers[resolvedStruct.miMethods[i].methodDef.methodIndex];
+                    resolvedStruct.miMethods[i].methodPtr = methodPtr;
                     if (!resolvedStruct.miMethods[i].isMangled || resolvedStruct.miMethods[i].isReferenced)
                     {
                         if (!mapTrustedMethods.ContainsKey(methodPtr))
@@ -312,7 +647,9 @@ namespace il2cpp_sdk_generator
             }
 
             for (int i = 0; i < resolvedType.nestedTypes.Count; i++)
+            {
                 AddRefsToResolve(resolvedType.nestedTypes[i]);
+            }
         }
 
         static void ResolveTrustedRefs()
@@ -325,6 +662,11 @@ namespace il2cpp_sdk_generator
                 mapTrustedMethods.Clear();
                 for (int i = 0; i < trustedMethods.Length; i++)
                 {
+                    if(trustedMethods[i].Key == 0x181E404E0)
+                    {
+
+                    }
+
                     var pointers = m_mapFunctionReferences[trustedMethods[i].Key];
 
                     for (int k = 0; k < pointers.Count; k++)
@@ -332,20 +674,68 @@ namespace il2cpp_sdk_generator
                         if (!mapMangledMethods.TryGetValue(pointers[k], out var methods))
                             continue;
 
-                        methods.ForEach((m) => { m.isReferenced = true; });
-                        mapTrustedMethods.Add(pointers[k], methods);
-                        mapMangledMethods.Remove(pointers[k]);
+                        methods.ForEach((m) => 
+                        {
+                            //m.isReferenced = true;
+                            //if (m.isOverride && m.overridenMethod != null)
+                            //    m.overridenMethod.isReferenced = true;
+
+                            if (mapOverrideLinks.TryGetValue(m, out var virtualMethod))
+                            {
+                                virtualMethod.isReferenced = true;
+                                if(mapMangledMethods.ContainsKey(virtualMethod.methodPtr))
+                                {
+                                    mapTrustedMethods.Add(virtualMethod.methodPtr, mapMangledMethods[virtualMethod.methodPtr]);
+                                    mapMangledMethods.Remove(virtualMethod.methodPtr);
+                                }
+
+                                for (int j=0;j<mapVirtualLinks[virtualMethod].Count;j++)
+                                {
+                                    mapVirtualLinks[virtualMethod][j].isReferenced = true;
+                                    if (mapMangledMethods.ContainsKey(mapVirtualLinks[virtualMethod][j].methodPtr))
+                                    {
+                                        mapTrustedMethods.Add(mapVirtualLinks[virtualMethod][j].methodPtr, mapMangledMethods[mapVirtualLinks[virtualMethod][j].methodPtr]);
+                                        mapMangledMethods.Remove(mapVirtualLinks[virtualMethod][j].methodPtr);
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                m.isReferenced = true;
+                            }
+                        });
+
+                        if (mapMangledMethods.ContainsKey(pointers[k]))
+                        {
+                            mapTrustedMethods.Add(pointers[k], methods);
+                            mapMangledMethods.Remove(pointers[k]);
+                        }
                     }
                 }
 
-                for (int i = 0; i < playerClass.miMethods.Count; i++)
-                {
-                    if (!playerClass.miMethods[i].isMangled || (playerClass.miMethods[i].isMangled && playerClass.miMethods[i].isReferenced))
-                        Console.WriteLine($"{playerClass.GetFullName()} method[{playerClass.miMethods[i].Name}]({playerClass.miMethods[i].methodIndex - playerClass.typeDef.methodStart }) is referenced");
-                    else
-                        Console.WriteLine($"{playerClass.GetFullName()} method[{playerClass.miMethods[i].Name}]({playerClass.miMethods[i].methodIndex - playerClass.typeDef.methodStart }) is not referenced");
-                }
+                //for (int i = 0; i < playerClass.miMethods.Count; i++)
+                //{
+                //    if (!playerClass.miMethods[i].isMangled || (playerClass.miMethods[i].isMangled && playerClass.miMethods[i].isReferenced))
+                //        Console.WriteLine($"{playerClass.GetFullName()} method[{playerClass.miMethods[i].Name}]({playerClass.miMethods[i].methodIndex - playerClass.typeDef.methodStart }) is referenced");
+                //    else
+                //        Console.WriteLine($"{playerClass.GetFullName()} method[{playerClass.miMethods[i].Name}]({playerClass.miMethods[i].methodIndex - playerClass.typeDef.methodStart }) is not referenced");
+                //}
             }
+        }
+
+        public static Dictionary<ResolvedMethod, List<ResolvedMethod>> mapVirtualLinks = new Dictionary<ResolvedMethod, List<ResolvedMethod>>();
+        public static Dictionary<ResolvedMethod, ResolvedMethod> mapOverrideLinks = new Dictionary<ResolvedMethod, ResolvedMethod>();
+
+        public static void LinkOverride(ResolvedMethod virtualMethod, ResolvedMethod overrideMethod)
+        {
+            if(!mapVirtualLinks.TryGetValue(virtualMethod, out var list))
+            {
+                list = new List<ResolvedMethod>();
+                mapVirtualLinks.Add(virtualMethod, list);
+            }
+
+            list.Add(overrideMethod);
+            mapOverrideLinks.Add(overrideMethod, virtualMethod);
         }
     }
 }

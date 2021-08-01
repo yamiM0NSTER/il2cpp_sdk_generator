@@ -12,7 +12,7 @@ using EncodedMethodIndex = System.UInt32;
 
 namespace il2cpp_sdk_generator
 {
-    static class Metadata
+    public static class Metadata
     {
         // Direct File data
         public static Il2CppGlobalMetadataHeader header;
@@ -52,10 +52,13 @@ namespace il2cpp_sdk_generator
 
         // Processed data
         public static Dictionary<Int32, Il2CppFieldDefaultValue> mapFieldDefValues = new Dictionary<Int32, Il2CppFieldDefaultValue>();
-
+        public static Dictionary<Int32, Il2CppParameterDefaultValue> mapParameterDefValues = new Dictionary<Int32, Il2CppParameterDefaultValue>();
+        public static Dictionary<Int32, object> mapParamDefValues = new Dictionary<Int32, object>();
 
         public static List<ResolvedImage> resolvedImages = new List<ResolvedImage>();
         public static ResolvedType[] resolvedTypes = null;
         public static List<ResolvedType> nestedTypes = new List<ResolvedType>();
+        public static Dictionary<UInt32, UInt32> usageMethods = new Dictionary<UInt32, UInt32>();
+        public static Dictionary<UInt32, UInt32> usageStringLiterals = new Dictionary<UInt32, UInt32>();
     }
 }

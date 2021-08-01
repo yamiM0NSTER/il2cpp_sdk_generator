@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -18,6 +19,7 @@ namespace il2cpp_sdk_generator
         {
             eventDef = eventDefinition;
             Name = MetadataReader.GetString(eventDef.nameIndex);
+            isMangled = !Name.isCSharpIdentifier();
         }
 
         public void AssignMethod(Int32 idx, ResolvedMethod resolvedMethod)
@@ -46,6 +48,29 @@ namespace il2cpp_sdk_generator
             }
         }
 
+        public async Task ToHeaderCode(StreamWriter sw, Int32 indent = 0)
+        {
+            await sw.WriteLineAsync($"// Event: {Name}".Indent(indent));
+
+            if (eventDef.add > -1)
+            {
+                await sw.WriteLineAsync("// Add".Indent(indent));
+                await add.ToHeaderCode(sw, indent);
+            }
+
+            if (eventDef.remove > -1)
+            {
+                await sw.WriteLineAsync("// Remove".Indent(indent));
+                await remove.ToHeaderCode(sw, indent);
+            }
+
+            if (eventDef.raise > -1)
+            {
+                await sw.WriteLineAsync("// Raise".Indent(indent));
+                await raise.ToHeaderCode(sw, indent);
+            }
+        }
+
         public string ToCode(Int32 indent)
         {
             string code = "";
@@ -70,6 +95,52 @@ namespace il2cpp_sdk_generator
                 code += raise.ToHeaderCode(indent);
             }
             
+            return code;
+        }
+
+        public async Task ToCppCode(StreamWriter sw, Int32 indent = 0)
+        {
+            if (eventDef.add > -1)
+            {
+                await sw.WriteLineAsync("// Add".Indent(indent));
+                await add.ToCppCode(sw, indent);
+            }
+
+            if (eventDef.remove > -1)
+            {
+                await sw.WriteLineAsync("// Remove".Indent(indent));
+                await remove.ToCppCode(sw, indent);
+            }
+
+            if (eventDef.raise > -1)
+            {
+                await sw.WriteLineAsync("// Raise".Indent(indent));
+                await raise.ToCppCode(sw, indent);
+            }
+        }
+
+        public string ToCppCode(Int32 indent = 0)
+        {
+            string code = "";
+
+            if (eventDef.add > -1)
+            {
+                code += "// Add\n".Indent(indent);
+                code += add.ToCppCode(indent);
+            }
+
+            if (eventDef.remove > -1)
+            {
+                code += "// Remove\n".Indent(indent);
+                code += remove.ToCppCode(indent);
+            }
+
+            if (eventDef.raise > -1)
+            {
+                code += "// Raise\n".Indent(indent);
+                code += raise.ToCppCode(indent);
+            }
+
             return code;
         }
 

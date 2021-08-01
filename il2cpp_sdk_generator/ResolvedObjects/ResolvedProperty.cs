@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,7 +18,7 @@ namespace il2cpp_sdk_generator
         {
             propDef = propDefinition;
             Name = MetadataReader.GetString(propDef.nameIndex);
-            isMangled = Name.isCSharpIdentifier();
+            isMangled = !Name.isCSharpIdentifier();
         }
 
         public void AssignMethod(Int32 idx, ResolvedMethod resolvedMethod)
@@ -38,24 +39,135 @@ namespace il2cpp_sdk_generator
             }
         }
 
-        public string ToCode(Int32 indent)
+        public async Task ToCppCode(StreamWriter sw, Int32 indent)
+        {
+            if (propDef.get > -1)
+            {
+                await getter.ToCppCode(sw, indent);
+                await sw.WriteLineAsync();
+            }
+
+            if (propDef.set > -1)
+            {
+                await setter.ToCppCode(sw, indent);
+                await sw.WriteLineAsync();
+            }
+        }
+
+        public string ToCppCode(Int32 indent)
+        {
+            string code = "";
+
+            //code += $"// Property: {Name}\n".Indent(indent);
+
+            if (propDef.get > -1)
+            {
+                //code += "// Getter\n".Indent(indent);
+                code += getter.ToCppCode(indent);
+                code += "\n";
+            }
+
+            if (propDef.set > -1)
+            {
+                //code += "// Setter\n".Indent(indent);
+                code += setter.ToCppCode(indent);
+                code += "\n";
+            }
+
+            return code;
+        }
+
+        public async Task ToHeaderCode(StreamWriter sw, Int32 indent)
+        {
+            await sw.WriteLineAsync($"// Property: {Name}".Indent(indent));
+
+            Il2CppType returnType = null;
+
+            string propertyString = $"__declspec(property (".Indent(indent);
+
+            bool bMakePropString = true;
+
+            if (propDef.get > -1)
+            {
+                propertyString += $"get={getter.Name.CSharpToCppIdentifier()}";
+                returnType = getter.returnType;
+
+                bMakePropString = getter.resolvedParameters.Count == 0;
+
+                await sw.WriteLineAsync("// Getter".Indent(indent));
+                await getter.ToHeaderCode(sw, indent);
+            }
+            
+            if (propDef.get > -1 && propDef.set > -1)
+            {
+                propertyString += ",";
+            }
+
+            if (propDef.set > -1)
+            {
+                propertyString += $"put={setter.Name.CSharpToCppIdentifier()}";
+                returnType = setter.resolvedParameters[0].type;
+
+                if (bMakePropString)
+                    bMakePropString = setter.resolvedParameters.Count == 1;
+
+                await sw.WriteLineAsync("// Setter".Indent(indent));
+                await setter.ToHeaderCode(sw, indent);
+            }
+
+            if (!this.isStatic && bMakePropString)
+            {
+                propertyString += $")) {MetadataReader.GetTypeString(returnType)} {this.Name.CSharpToCppIdentifier()};";
+                await sw.WriteLineAsync(propertyString);
+            }
+        }
+
+        public string ToHeaderCode(Int32 indent)
         {
             string code = "";
 
             code += $"// Property: {Name}\n".Indent(indent);
 
+            Il2CppType returnType = null;
+
+            string propertyString = $"__declspec(property (".Indent(indent);
+
+            bool bMakePropString = true;
+
             if (propDef.get> -1)
             {
+                propertyString += $"get={getter.Name.CSharpToCppIdentifier()}";
+                returnType = getter.returnType;
+
+                bMakePropString = getter.resolvedParameters.Count == 0;
+
                 code += "// Getter\n".Indent(indent);
                 code += getter.ToHeaderCode(indent);
             }
 
+            if (propDef.get > -1 && propDef.set > -1)
+            {
+                propertyString += ",";
+            }
+
             if (propDef.set > -1)
             {
+                propertyString += $"put={setter.Name.CSharpToCppIdentifier()}";
+                returnType = setter.resolvedParameters[0].type;
+
+                if(bMakePropString)
+                    bMakePropString = setter.resolvedParameters.Count == 1;
+
                 code += "// Setter\n".Indent(indent);
                 code += setter.ToHeaderCode(indent);
             }
             
+            if(!this.isStatic && bMakePropString)
+            {
+                propertyString += $")) {MetadataReader.GetTypeString(returnType)} {this.Name.CSharpToCppIdentifier()};\n";
+                code += propertyString;
+            }
+
             return code;
         }
 

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,71 +18,344 @@ namespace il2cpp_sdk_generator
         public List<ulong> refAddrs = new List<ulong>();
         public List<ResolvedMethod> refMethods = new List<ResolvedMethod>();
         public bool isReferenced { get; set; }
+        public ResolvedMethod overridenMethod = null;
+        public ulong methodPtr = 0;
+        public bool isCtor = false;
 
-        public ResolvedMethod(Il2CppMethodDefinition methodDefinition, Int32 methodIdx)
+        public ResolvedMethod(Il2CppMethodDefinition methodDefinition, Int32 methodIdx, ResolvedType declType)
         {
             methodIndex = methodIdx;
             methodDef = methodDefinition;
             returnType = il2cpp.types[methodDef.returnType];
+            declaringType = declType;
             Name = MetadataReader.GetString(methodDef.nameIndex);
             for (int i = 0; i < methodDef.parameterCount; i++)
             {
-                ResolvedParameter resolvedParameter = new ResolvedParameter(Metadata.parameterDefinitions[methodDef.parameterStart + i]);
+                ResolvedParameter resolvedParameter = new ResolvedParameter(Metadata.parameterDefinitions[methodDef.parameterStart + i], methodDef.parameterStart + i);
                 resolvedParameters.Add(resolvedParameter);
             }
+
             isMangled = !Name.isCSharpIdentifier();
             if (isMangled)
                 isReferenced = false;
+
+            isCtor = Name == ".ctor";
+        }
+
+        public async Task ToHeaderCode(StreamWriter sw, Int32 indent = 0)
+        {
+            await sw.WriteAsync("".Indent(indent));
+
+            if (methodDef.slot != il2cpp_Constants.kInvalidIl2CppMethodSlot)
+            {
+                await sw.WriteAsync($"// Slot: {methodDef.slot}\n");
+                await sw.WriteAsync("".Indent(indent));
+            }
+
+            if (methodPtr != 0)
+            {
+                await sw.WriteAsync($"// RVA: 0x{RVA.FromVA(methodPtr):X} VA: 0x{methodPtr:X16}\n");
+                await sw.WriteAsync("".Indent(indent));
+            }
+
+            if (isStatic)
+                await sw.WriteAsync("static ");
+
+            if (isVirtual)
+                await sw.WriteAsync("/*virtual*/ ");
+
+            //if(isCtor && declaringType is ResolvedStruct)
+            //{
+            //    code += $"{declaringType.Name}(";
+            //    for (int i = 0; i < resolvedParameters.Count; i++)
+            //    {
+            //        code += resolvedParameters[i].ToHeaderCode();
+            //        if (i < resolvedParameters.Count - 1)
+            //            code += ", ";
+            //    }
+
+            //    code += ")";
+            //    if (isOverride && ((isMangled && overridenMethod != null) || !isMangled))
+            //        code += " /*override*/";
+            //    code += ";\n";
+            //    code += "".Indent(indent);
+            //}
+
+            await sw.WriteAsync($"{MetadataReader.GetTypeString(returnType)} {Name.CSharpToCppIdentifier()}(");
+            for (int i = 0; i < resolvedParameters.Count; i++)
+            {
+                await sw.WriteAsync(resolvedParameters[i].ToHeaderCode());
+                if (i < resolvedParameters.Count - 1)
+                    await sw.WriteAsync(", ");
+            }
+
+            await sw.WriteAsync(")");
+            if (isOverride && ((isMangled && overridenMethod != null) || !isMangled))
+                await sw.WriteAsync(" /*override*/");
+            await sw.WriteAsync(";\n");
         }
 
         public string ToHeaderCode(Int32 indent = 0)
         {
             string code = "".Indent(indent);
 
+            if (methodDef.slot != il2cpp_Constants.kInvalidIl2CppMethodSlot)
+            {
+                code += $"// Slot: {methodDef.slot}\n";
+                code += "".Indent(indent);
+            }
+
+            if(methodPtr != 0)
+            {
+                code += $"// RVA: 0x{RVA.FromVA(methodPtr):X} VA: 0x{methodPtr:X16}\n";
+                code += "".Indent(indent);
+            }
+
             if (isStatic)
                 code += "static ";
 
-            code += $"{MetadataReader.GetTypeString(returnType)} {Name}(";
+            if(isVirtual)
+                code += "/*virtual*/ ";
+
+            //if(isCtor && declaringType is ResolvedStruct)
+            //{
+            //    code += $"{declaringType.Name}(";
+            //    for (int i = 0; i < resolvedParameters.Count; i++)
+            //    {
+            //        code += resolvedParameters[i].ToHeaderCode();
+            //        if (i < resolvedParameters.Count - 1)
+            //            code += ", ";
+            //    }
+
+            //    code += ")";
+            //    if (isOverride && ((isMangled && overridenMethod != null) || !isMangled))
+            //        code += " /*override*/";
+            //    code += ";\n";
+            //    code += "".Indent(indent);
+            //}
+
+            code += $"{MetadataReader.GetTypeString(returnType)} {Name.CSharpToCppIdentifier()}(";
             for(int i =0;i<resolvedParameters.Count;i++)
             {
-                code += resolvedParameters[i].ToCode();
+                code += resolvedParameters[i].ToHeaderCode();
                 if (i < resolvedParameters.Count - 1)
                     code += ", ";
             }
-            code += ");\n";
+
+            code += ")";
+            if (isOverride && ((isMangled && overridenMethod != null) || !isMangled))
+                code += " /*override*/";
+            code += ";\n";
+
             return code;
+        }
+
+        public override string Name
+        {
+            get
+            {
+                if (isOverride && overridenMethod != null)
+                    return overridenMethod.Name;
+                return base.Name;
+            }
+        }
+
+        public async Task ToCppCode(StreamWriter sw, Int32 indent = 0)
+        {
+            bool needsPtr = false;
+            if (returnType.type != Il2CppTypeEnum.IL2CPP_TYPE_PTR && returnType.type != Il2CppTypeEnum.IL2CPP_TYPE_CLASS && returnType.type != Il2CppTypeEnum.IL2CPP_TYPE_STRING)
+                needsPtr = true;
+            await sw.WriteAsync("".Indent(indent));
+            string returnTypeStr = MetadataReader.GetTypeString(returnType);
+
+            string paramStr = "nullptr";
+            string instanceStr = isStatic ? "nullptr" : "this";
+
+            //if (isCtor && declaringType is ResolvedStruct)
+            //{
+            //    sw.Write($"{declaringType.NestedName()}{declaringType.Name}(";
+            //    for (int i = 0; i < resolvedParameters.Count; i++)
+            //    {
+            //        sw.Write(resolvedParameters[i].ToCppCode();
+            //        if (i < resolvedParameters.Count - 1)
+            //            sw.Write(", ";
+            //    }
+            //    sw.Write(")\n";
+            //    sw.Write("{\n".Indent(indent);
+            //    if (resolvedParameters.Count > 0)
+            //    {
+            //        paramStr = "params";
+            //        sw.Write($"void* params[{resolvedParameters.Count}] = {{".Indent(indent + 2);
+            //        for (int i = 0; i < resolvedParameters.Count; i++)
+            //        {
+            //            if (resolvedParameters[i].isValueType && !resolvedParameters[i].isOut)
+            //                sw.Write("&";
+
+            //            sw.Write(resolvedParameters[i].Name;
+            //            if (i < resolvedParameters.Count - 1)
+            //                sw.Write(", ";
+            //        }
+            //        sw.Write("};\n";
+            //    }
+
+            //    //void* params[4] = { parameter_1, &parameter_2, &parameter_3, &parameter_4 };
+            //    sw.Write("".Indent(indent + 2);
+            //    if (returnTypeStr != "void")
+            //        sw.Write("Il2CppBoxedObject* ret = ";
+            //    sw.Write($"il2cpp::runtime_invoke({MI_Name}, {instanceStr}, {paramStr});\n";
+            //    //resolvedParameters.Count
+
+            //    if (returnTypeStr != "void")
+            //    {
+            //        sw.Write($"return ".Indent(indent + 2);
+            //        if (needsPtr)
+            //            sw.Write("*";
+            //        sw.Write($"({returnTypeStr}";
+            //        if (needsPtr)
+            //            sw.Write("*";
+            //        sw.Write($")il2cpp::object_unbox(ret);\n";
+            //    }
+
+            //    // code
+            //    sw.Write("}\n".Indent(indent);
+            //}
+
+            await sw.WriteAsync($"{returnTypeStr} {declaringType.NestedName()}{Name.CSharpToCppIdentifier()}(");
+            for (int i = 0; i < resolvedParameters.Count; i++)
+            {
+                await resolvedParameters[i].ToCppCode(sw);
+                //sw.Write(resolvedParameters[i].ToCppCode());
+                if (i < resolvedParameters.Count - 1)
+                    await sw.WriteAsync(", ");
+            }
+            await sw.WriteAsync(")\n");
+            await sw.WriteAsync("{\n".Indent(indent));
+
+            if (resolvedParameters.Count > 0)
+            {
+                paramStr = "params";
+                await sw.WriteAsync($"void* params[{resolvedParameters.Count}] = {{".Indent(indent + 2));
+                for (int i = 0; i < resolvedParameters.Count; i++)
+                {
+                    if (resolvedParameters[i].isValueType && !resolvedParameters[i].isOut)
+                        await sw.WriteAsync("&");
+
+                    await sw.WriteAsync(resolvedParameters[i].Name);
+                    if (i < resolvedParameters.Count - 1)
+                        await sw.WriteAsync(", ");
+                }
+                await sw.WriteAsync("};\n");
+            }
+
+            //void* params[4] = { parameter_1, &parameter_2, &parameter_3, &parameter_4 };
+            await sw.WriteAsync("".Indent(indent + 2));
+
+            if (returnTypeStr.EndsWith("*"))
+            {
+                await sw.WriteAsync($"return ({returnTypeStr})il2cpp::runtime_invoke({MI_Name}, {instanceStr}, {paramStr});\n");
+            }
+            else
+            {
+                if (returnTypeStr != "void")
+                    await sw.WriteAsync("Il2CppBoxedObject* ret = ");
+                await sw.WriteAsync($"il2cpp::runtime_invoke({MI_Name}, {instanceStr}, {paramStr});\n");
+                //resolvedParameters.Count
+
+                if (returnTypeStr != "void")
+                {
+                    await sw.WriteAsync($"return ".Indent(indent + 2));
+                    if (needsPtr)
+                        await sw.WriteAsync("*");
+                    await sw.WriteAsync($"({returnTypeStr}");
+                    if (needsPtr)
+                        await sw.WriteAsync("*");
+                    await sw.WriteAsync($")il2cpp::object_unbox(ret);\n");
+                }
+            }
+            
+            // code
+            await sw.WriteAsync("}\n".Indent(indent));
         }
 
         public string ToCppCode(Int32 indent = 0)
         {
             bool needsPtr = false;
-            if (returnType.type != Il2CppTypeEnum.IL2CPP_TYPE_PTR && returnType.type != Il2CppTypeEnum.IL2CPP_TYPE_CLASS)
+            if (returnType.type != Il2CppTypeEnum.IL2CPP_TYPE_PTR && returnType.type != Il2CppTypeEnum.IL2CPP_TYPE_CLASS && returnType.type != Il2CppTypeEnum.IL2CPP_TYPE_STRING)
                 needsPtr = true;
             string code = "".Indent(indent);
             string returnTypeStr = MetadataReader.GetTypeString(returnType);
-            code += $"{returnTypeStr} {declaringType.NestedName()}{Name}(";
+
+            string paramStr = "nullptr";
+            string instanceStr = isStatic ? "nullptr" : "this";
+
+            //if (isCtor && declaringType is ResolvedStruct)
+            //{
+            //    code += $"{declaringType.NestedName()}{declaringType.Name}(";
+            //    for (int i = 0; i < resolvedParameters.Count; i++)
+            //    {
+            //        code += resolvedParameters[i].ToCppCode();
+            //        if (i < resolvedParameters.Count - 1)
+            //            code += ", ";
+            //    }
+            //    code += ")\n";
+            //    code += "{\n".Indent(indent);
+            //    if (resolvedParameters.Count > 0)
+            //    {
+            //        paramStr = "params";
+            //        code += $"void* params[{resolvedParameters.Count}] = {{".Indent(indent + 2);
+            //        for (int i = 0; i < resolvedParameters.Count; i++)
+            //        {
+            //            if (resolvedParameters[i].isValueType && !resolvedParameters[i].isOut)
+            //                code += "&";
+
+            //            code += resolvedParameters[i].Name;
+            //            if (i < resolvedParameters.Count - 1)
+            //                code += ", ";
+            //        }
+            //        code += "};\n";
+            //    }
+
+            //    //void* params[4] = { parameter_1, &parameter_2, &parameter_3, &parameter_4 };
+            //    code += "".Indent(indent + 2);
+            //    if (returnTypeStr != "void")
+            //        code += "Il2CppBoxedObject* ret = ";
+            //    code += $"il2cpp::runtime_invoke({MI_Name}, {instanceStr}, {paramStr});\n";
+            //    //resolvedParameters.Count
+
+            //    if (returnTypeStr != "void")
+            //    {
+            //        code += $"return ".Indent(indent + 2);
+            //        if (needsPtr)
+            //            code += "*";
+            //        code += $"({returnTypeStr}";
+            //        if (needsPtr)
+            //            code += "*";
+            //        code += $")il2cpp::object_unbox(ret);\n";
+            //    }
+
+            //    // code
+            //    code += "}\n".Indent(indent);
+            //}
+
+            code += $"{returnTypeStr} {declaringType.NestedName()}{Name.CSharpToCppIdentifier()}(";
             for (int i = 0; i < resolvedParameters.Count; i++)
             {
-                code += resolvedParameters[i].ToCode();
+                code += resolvedParameters[i].ToCppCode();
                 if (i < resolvedParameters.Count - 1)
                     code += ", ";
             }
             code += ")\n";
             code += "{\n".Indent(indent);
-            string paramStr = "nullptr";
-            string instanceStr = isStatic ? "nullptr" : "this";
+            
             if(resolvedParameters.Count > 0)
             {
                 paramStr = "params";
-                code += $"void* params[{resolvedParameters.Count}] = ".Indent(indent+2);
-                code += "{ ";
+                code += $"void* params[{resolvedParameters.Count}] = {{".Indent(indent+2);
                 for(int i =0;i< resolvedParameters.Count;i++)
                 {
-                    if (resolvedParameters[i].type.type == Il2CppTypeEnum.IL2CPP_TYPE_VALUETYPE || 
-                        resolvedParameters[i].type.type == Il2CppTypeEnum.IL2CPP_TYPE_BOOLEAN ||
-                        resolvedParameters[i].type.type == Il2CppTypeEnum.IL2CPP_TYPE_R4 ||
-                        resolvedParameters[i].type.type == Il2CppTypeEnum.IL2CPP_TYPE_R8)
+                    if(resolvedParameters[i].isValueType && !resolvedParameters[i].isOut)
                         code += "&";
+
                     code += resolvedParameters[i].Name;
                     if (i < resolvedParameters.Count - 1)
                         code += ", ";
@@ -91,21 +365,30 @@ namespace il2cpp_sdk_generator
 
             //void* params[4] = { parameter_1, &parameter_2, &parameter_3, &parameter_4 };
             code += "".Indent(indent + 2);
-            if (returnTypeStr != "void")
-                code += "Il2CppBoxedObject* ret = ";
-            code += $"il2cpp::runtime_invoke({MI_Name}, {instanceStr}, {paramStr});\n";
-            //resolvedParameters.Count
-            
-            if (returnTypeStr != "void")
+
+            if(returnTypeStr.EndsWith("*"))
             {
-                code += $"return ".Indent(indent + 2);
-                if (needsPtr)
-                    code += "*";
-                code += $"({returnTypeStr}";
-                if (needsPtr)
-                    code += "*";
-                code += $")il2cpp::object_unbox(ret);\n";
+                code += $"return ({returnTypeStr})il2cpp::runtime_invoke({MI_Name}, {instanceStr}, {paramStr});\n";
             }
+            else
+            {
+                if (returnTypeStr != "void")
+                    code += "Il2CppBoxedObject* ret = ";
+                code += $"il2cpp::runtime_invoke({MI_Name}, {instanceStr}, {paramStr});\n";
+                //resolvedParameters.Count
+
+                if (returnTypeStr != "void")
+                {
+                    code += $"return ".Indent(indent + 2);
+                    if (needsPtr)
+                        code += "*";
+                    code += $"({returnTypeStr}";
+                    if (needsPtr)
+                        code += "*";
+                    code += $")il2cpp::object_unbox(ret);\n";
+                }
+            }
+            
             
             // code
             code += "}\n".Indent(indent);
@@ -140,10 +423,33 @@ namespace il2cpp_sdk_generator
             }
         }
 
+        public uint accessFlag
+        {
+            get
+            {
+                return methodDef.flags & il2cpp_Constants.METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK;
+            }
+        }
+
+        public bool isPublic
+        {
+            get
+            {
+                return this.accessFlag == il2cpp_Constants.METHOD_ATTRIBUTE_PUBLIC;
+            }
+        }
+
+        public string ValidString()
+        {
+            if (isOverride && overridenMethod == null)
+                return "Invalid";
+            return "";
+        }
+
         public string DemangledPrefix()
         {
-            string prefix = $"{ReferencedString()}m{StaticString()}_{VirtualString()}{AccessString()}{MetadataReader.GetSimpleTypeString(returnType)}";
-            for(int i =0;i<resolvedParameters.Count;i++)
+            string prefix = $"{ReferencedString()}m{StaticString()}_{ValidString()}{VirtualString()}{AccessString()}{MetadataReader.GetSimpleTypeString(returnType)}";
+            for (int i =0;i<resolvedParameters.Count;i++)
             {
                 if (!prefix.EndsWith("_"))
                     prefix += "_";
@@ -196,6 +502,8 @@ namespace il2cpp_sdk_generator
             return "";
         }
 
+        
+
         public void DemangleParams()
         {
             for(int i =0;i< resolvedParameters.Count;i++)
@@ -211,6 +519,61 @@ namespace il2cpp_sdk_generator
                 }
 
                 resolvedParameter.Name = $"_{i}";
+            }
+        }
+
+        static public List<ResolvedMethod> broken_methods = new List<ResolvedMethod>();
+
+        internal void ResolveOverride()
+        {
+            if (!isOverride)
+                return;
+
+            if (declaringType.parentType == null)
+                return;
+
+            if (declaringType is ResolvedClass)
+            {
+                ResolvedClass resolvedClass = declaringType.parentType as ResolvedClass;
+                while(overridenMethod == null && resolvedClass != null)
+                {
+                    if (resolvedClass.slottedMethods.TryGetValue(methodDef.slot, out var resolvedMethod))
+                    {
+                        overridenMethod = resolvedMethod;
+                        break;
+                        //return;
+                    }
+                    else
+                    {
+                        resolvedClass = (ResolvedClass)resolvedClass.parentType;
+                    }
+                }                
+            }
+            else if(declaringType is ResolvedStruct)
+            {
+                ResolvedStruct resolvedStruct = declaringType.parentType as ResolvedStruct;
+                while (overridenMethod == null && resolvedStruct != null)
+                {
+                    if (resolvedStruct.slottedMethods.TryGetValue(methodDef.slot, out var resolvedMethod))
+                    {
+                        overridenMethod = resolvedMethod;
+                        break;
+                        //return;
+                    }
+                    else
+                    {
+                        resolvedStruct = (ResolvedStruct)resolvedStruct.parentType;
+                    }
+                }
+            }
+
+            if (overridenMethod == null)
+                broken_methods.Add(this);
+
+            // TODO: Link Override methods and Virtual methods for reference linking
+            if(overridenMethod != null)
+            {
+                CodeScanner.LinkOverride(overridenMethod, this);
             }
         }
     }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -40,13 +41,25 @@ namespace il2cpp_sdk_generator
         {
             if (isResolved)
                 return;
-            Console.WriteLine("ResolvedType::Resolve()");
+            Console.WriteLine($"{this.GetType().Name}::Resolve()");
             isResolved = true;
         }
 
-        public virtual string ToHeaderCode(Int32 indent = 0)
+        public virtual async Task ToHeaderCode(StreamWriter sw, Int32 indent = 0)
         {
-            return "ResolvedType::ToHeaderCode";
+            Console.WriteLine($"ResolvedType::ToHeaderCodeSW {this.GetType().Name}");
+            await sw.WriteAsync($"{this.GetType().Name}::ToHeaderCode");
+        }
+
+        public virtual string ToHeaderCode(Int32 indent = 0)
+        {   
+            return $"{this.GetType().Name}::ToHeaderCode";
+        }
+
+        public virtual string ToHeaderCodeGlobal(Int32 indent = 0)
+        {
+
+            return $"{this.GetType().Name}::ToHeaderCodeGlobal";
         }
 
         public string CppNamespace()
@@ -54,11 +67,13 @@ namespace il2cpp_sdk_generator
             return Namespace.Replace(".", "::");
         }
 
-        public string GetFullName()
+        public virtual string GetFullName()
         {
             string str = "";
             if (isNested)
+            {
                 str = declaringType.GetFullName();
+            }
             else
                 str = CppNamespace();
 
@@ -66,6 +81,11 @@ namespace il2cpp_sdk_generator
                 str += "::";
             str += $"{Name}";
             return str;
+        }
+
+        internal virtual void ResolveOverrides()
+        {
+            
         }
 
         public virtual string DemangledPrefix()
@@ -120,9 +140,9 @@ namespace il2cpp_sdk_generator
             return demangledPrefixes;
         }
 
-        protected bool isDemangled = false;
+        public bool isDemangled = false;
 
-        public virtual void Demangle()
+        public virtual void Demangle(bool force = false)
         {
             if (isDemangled)
                 return;
@@ -130,7 +150,7 @@ namespace il2cpp_sdk_generator
             // Demangle Nested types.
             for (int i = 0; i < nestedTypes.Count; i++)
             {
-                nestedTypes[i].Demangle();
+                nestedTypes[i].Demangle(force);
             }
         }
 
@@ -141,6 +161,7 @@ namespace il2cpp_sdk_generator
             for(int i =0;i< nestedTypes.Count;i++)
             {
                 ResolvedType resolvedType = nestedTypes[i];
+                resolvedType.DemangleNestedTypeNames();
                 if (resolvedType.Name.isCSharpIdentifier())
                 {
                     if (resolvedType.Name.isCppIdentifier())
@@ -160,13 +181,18 @@ namespace il2cpp_sdk_generator
 
                 resolvedType.Name = $"{demangledPrefix}{idx}";
                 demangledPrefixes[demangledPrefix] = idx;
-                resolvedType.DemangleNestedTypeNames();
             }
+        }
+
+        public virtual async Task ToCppCode(StreamWriter sw, Int32 indent = 0)
+        {
+            Console.WriteLine($"ResolvedType::ToCppCodeSW {this.GetType().Name}");
+            await sw.WriteAsync($"{this.GetType().Name}::ToCppCode");
         }
 
         public virtual string ToCppCode(Int32 indent = 0)
         {
-            return "ResolvedType::ToCppCode";
+            return $"{this.GetType().Name}::ToCppCode";
         }
 
         public string NestedName(string name = "")
@@ -176,6 +202,73 @@ namespace il2cpp_sdk_generator
 
             name = $"{Name}::{name}";
             return declaringType.NestedName(name);
+        }
+
+        public virtual string ForwardDeclaration(Int32 indent = 0)
+        {
+            return $"{this.GetType().Name}::ForwardDeclaration";
+        }
+
+        public virtual string ReturnTypeString(bool nestedCall = false)
+        {
+            string str = "";
+            if (isNested)
+            {
+                str = declaringType.ReturnTypeString(true);
+                str += "::";
+            }
+            else
+            {
+                str = CppNamespace();
+                if(str != "")
+                    str += "::";
+            }
+
+            str += $"{Name}";
+            //if (typeDef.genericContainerIndex >= 0 && !isNested)
+            //{
+            //    str += "::";
+            //    Il2CppGenericContainer generic_container = Metadata.genericContainers[typeDef.genericContainerIndex];
+
+            //    //str += "<";
+            //    for (int i = 0; i < generic_container.type_argc; i++)
+            //    {
+            //        str += $"{{{i}}}";
+            //        if (i < generic_container.type_argc - 1)
+            //            str += "_";
+            //    }
+            //    //str += ">";
+            //}
+
+            return str;
+        }
+
+        public virtual string DeclarationString(bool nestedCall = false)
+        {
+            string str = "";
+            if (isNested)
+            {
+                str = declaringType.DeclarationString(true);
+                str += "::";
+            }
+            str += Name;
+            //if (typeDef.genericContainerIndex >= 0 && nestedCall)
+            //if (typeDef.genericContainerIndex >= 0 && !isNested && nestedCall)
+            //{
+            //    Il2CppGenericContainer generic_container = Metadata.genericContainers[typeDef.genericContainerIndex];
+
+            //    str += "<";
+            //    for (int i = 0; i < generic_container.type_argc; i++)
+            //    {
+            //        Il2CppGenericParameter generic_parameter = Metadata.genericParameters[generic_container.genericParameterStart + i];
+            //        str += $"{MetadataReader.GetString(generic_parameter.nameIndex)}";
+            //        if (i < generic_container.type_argc - 1)
+            //            str += ", ";
+            //    }
+            //    str += ">";
+            //}
+
+            return str;
         }
     }
 }

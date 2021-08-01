@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 // https://blog.kowalczyk.info/articles/pefileformat.html
 // https://docs.microsoft.com/en-us/windows/win32/debug/pe-format
 
+
 using BYTE = System.Byte;
 using USHORT = System.UInt16;
 using WORD = System.UInt16;
@@ -555,6 +556,24 @@ namespace il2cpp_sdk_generator
         /// The RVA of the unwind information.
         /// </summary>
         public ULONG UnwindInformation;
+    }
+
+    class UNWIND_INFO
+    {
+        public BYTE VerFlags;
+        public BYTE SizeOfProlog;
+        public BYTE CountOfCodes;
+        public BYTE FrameRegOff;
+        ULONG UnwindCodeArr;
+        ULONG FuncEntry;
+
+        public BYTE Flags
+        {
+            get
+            {
+                return (BYTE)((VerFlags & 0b1111_1000) >> 3);
+            }
+        }
     }
 
 

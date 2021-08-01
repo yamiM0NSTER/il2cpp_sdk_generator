@@ -5,7 +5,7 @@ using System.Text;
 
 namespace il2cpp_sdk_generator
 {
-    class BinaryPattern
+    public class BinaryPattern
     {
         static private byte[] m_assemblyData;
         static public long m_assemblySize;
@@ -39,8 +39,8 @@ namespace il2cpp_sdk_generator
             //}
 
             bool bFound = false;
-            Console.WriteLine($"Start: {start}");
-            Console.WriteLine($"Max Length:{m_assemblyData.Length - pattern.Length}");
+            //Console.WriteLine($"Start: {start}");
+            //Console.WriteLine($"Max Length:{m_assemblyData.Length - pattern.Length}");
 
             for (long i = offset; i < m_assemblyData.Length - pattern_len + 1; i++)
             {
@@ -88,17 +88,17 @@ namespace il2cpp_sdk_generator
             }
 
 
-            Console.WriteLine($"Pattern length: {pattern_len}");
-            Console.WriteLine($"Pattern map length: {patternMap.Count + 1}");
+            //Console.WriteLine($"Pattern length: {pattern_len}");
+            //Console.WriteLine($"Pattern map length: {patternMap.Count + 1}");
             //foreach(var pair in patternMap)
             //{
             //    Console.WriteLine($"pos: {pair.Key} val: {pair.Value}");
             //}
 
             bool bFound = false;
-            Console.WriteLine($"Start: {start}");
-            Console.WriteLine($"Max Length: {m_assemblyData.Length - pattern_len}");
-            Console.WriteLine($"Start offset: {offset} offset + length - len: {offset + max_length - pattern_len}");
+            //Console.WriteLine($"Start: {start}");
+            //Console.WriteLine($"Max Length: {m_assemblyData.Length - pattern_len}");
+            //Console.WriteLine($"Start offset: {offset} offset + length - len: {offset + max_length - pattern_len}");
             for (long i = offset; i < offset + max_length - pattern_len + 1; i++)
             {
                 if (m_assemblyData[i] != start)
@@ -124,7 +124,7 @@ namespace il2cpp_sdk_generator
                 }
             }
 
-            Console.WriteLine($"Not found?");
+            //Console.WriteLine($"Not found?");
 
             return 0;
         }
@@ -146,11 +146,11 @@ namespace il2cpp_sdk_generator
 
         public static Int32 GetInt32_LE(long offset)
         {
-            Console.WriteLine("GetInt32:");
-            Console.WriteLine($"=> {(int)m_assemblyData[offset]} HEX: 0x{(int)m_assemblyData[offset]:X}");
-            Console.WriteLine($"=> {(int)m_assemblyData[offset + 1] << 8 } HEX: 0x{(int)m_assemblyData[offset + 1] << 8:X}");
-            Console.WriteLine($"=> {(int)m_assemblyData[offset + 2] << 16} HEX: 0x{(int)m_assemblyData[offset + 2] << 16:X}");
-            Console.WriteLine($"=> {(int)m_assemblyData[offset + 3] << 24} HEX: 0x{(int)m_assemblyData[offset + 3] << 24:X}");
+            //Console.WriteLine("GetInt32:");
+            //Console.WriteLine($"=> {(int)m_assemblyData[offset]} HEX: 0x{(int)m_assemblyData[offset]:X}");
+            //Console.WriteLine($"=> {(int)m_assemblyData[offset + 1] << 8 } HEX: 0x{(int)m_assemblyData[offset + 1] << 8:X}");
+            //Console.WriteLine($"=> {(int)m_assemblyData[offset + 2] << 16} HEX: 0x{(int)m_assemblyData[offset + 2] << 16:X}");
+            //Console.WriteLine($"=> {(int)m_assemblyData[offset + 3] << 24} HEX: 0x{(int)m_assemblyData[offset + 3] << 24:X}");
 
             return (m_assemblyData[offset + 3] << 24) + (m_assemblyData[offset + 2] << 16) + (m_assemblyData[offset + 1] << 8) + m_assemblyData[offset];
         }

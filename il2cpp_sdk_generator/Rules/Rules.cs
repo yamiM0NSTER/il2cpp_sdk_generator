@@ -8,7 +8,7 @@ using System.Reflection;
 
 namespace il2cpp_sdk_generator
 {
-    class Rules
+    public class Rules
     {
         static List<Type> rules = new List<Type>();
         static Dictionary<string, Type> mapObjRule = new Dictionary<string, Type>();
@@ -46,7 +46,40 @@ namespace il2cpp_sdk_generator
         {
             for (int i = 0; i < rules.Count; i++)
             {
-                rules[i].GetMethod("Apply").Invoke(null, null);
+                var resolveObject = rules[i].GetMethod("ResolveObject");
+                if (resolveObject == null)
+                    continue;
+
+                resolveObject.Invoke(null, null);
+            }
+
+            for (int i = 0; i < rules.Count; i++)
+            {
+                var apply = rules[i].GetMethod("Apply");
+
+                if (apply == null)
+                    continue;
+
+                apply.Invoke(null, null);
+            }
+
+            MetadataReader.mapSimpleTypeStringCache.Clear();
+            MetadataReader.mapTypeStringCache.Clear();
+
+            for (int i = 0; i < rules.Count; i++)
+            {
+                var resolvedType = rules[i].GetField("resolved_object").GetValue(null) as ResolvedType;
+                if (resolvedType == null)
+                    continue;
+
+                if(Demangler.demangledTypes.TryGetValue(resolvedType, out var val))
+                {
+                    Demangler.demangledTypes.Remove(resolvedType);
+                }
+
+
+                resolvedType.isDemangled = false;
+                resolvedType.Demangle(true);
             }
         }
     }

@@ -507,11 +507,11 @@ namespace il2cpp_sdk_generator
                         stream.Position = (long)Offset.FromRVA(PortableExecutable.importLookupTableEntries[i].Hint_NameTableRVA);
                         PortableExecutable.hintNameTableEntries[i] = reader.Read<HINT_NAME_TABLE_ENTRY>();
                         //PortableExecutable.hintNameTableEntries[i].DumpToConsole();
-                        Console.WriteLine($" {PortableExecutable.hintNameTableEntries[i].Name}");
+                        //Console.WriteLine($" {PortableExecutable.hintNameTableEntries[i].Name}");
                     }
-                    else
+                    else // Odrinal number
                     {
-                        Console.WriteLine($" Ordinal: {PortableExecutable.importLookupTableEntries[i].OrdinalNumber}");
+                        //Console.WriteLine($" Ordinal: {PortableExecutable.importLookupTableEntries[i].OrdinalNumber}");
                     }
                 }
             }
@@ -540,13 +540,43 @@ namespace il2cpp_sdk_generator
             for(int i = 0;i< PortableExecutable.runtimeFunctions.Length;i++)
             {
                 PortableExecutable.m_mapRuntimeFunctionPtrs.Add(VA.FromRVA(PortableExecutable.runtimeFunctions[i].BeginAddress), PortableExecutable.runtimeFunctions[i]);
-                CodeScanner.funcPtrs.Add(VA.FromRVA(PortableExecutable.runtimeFunctions[i].BeginAddress));
             }
-            
-            //foreach (var entry in PortableExecutable.exceptionTableEntries)
-            //{
-            //    Console.WriteLine($"[0x{VA.FromRVA(entry.BeginAddress):X8}]");
-            //}
+
+            foreach (var entry in PortableExecutable.runtimeFunctions)
+            {
+                //Console.WriteLine($"[0x{VA.FromRVA(entry.BeginAddress):X8}]");
+
+                //Console.WriteLine($"UNWIND_INFO: [0x{VA.FromRVA(entry.UnwindInformation):X8}]");
+                stream.Position = (long)Offset.FromRVA(entry.UnwindInformation);
+                UNWIND_INFO unwindInfo = reader.Read<UNWIND_INFO>();
+
+                if (unwindInfo.Flags == 0x04)
+                {
+                    stream.Position += unwindInfo.CountOfCodes * 2;
+                    RUNTIME_FUNCTION baseFunc = reader.Read<RUNTIME_FUNCTION>();
+
+                    if (PortableExecutable.m_mapRuntimeFunctionPtrs.TryGetValue(VA.FromRVA(baseFunc.BeginAddress), out var mappedFunc))
+                    {
+                        if (mappedFunc.EndAddress == entry.BeginAddress)
+                        {
+                            mappedFunc.EndAddress = entry.EndAddress;
+                            PortableExecutable.m_mapRuntimeFunctionPtrs.Remove(VA.FromRVA(entry.BeginAddress));
+                        }
+                        else
+                        {
+
+                        }
+                    }
+                    else
+                    {
+
+                    }
+                }
+                else
+                {
+                    CodeScanner.funcPtrs.Add(VA.FromRVA(entry.BeginAddress));
+                }
+            }
         }
     }
 }

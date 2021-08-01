@@ -5,7 +5,7 @@ using System.Text;
 
 namespace il2cpp_sdk_generator
 {
-    class il2cpp
+    public class il2cpp
     {
         // Code Registration
         public static ulong CodeRegistrationAddress;
@@ -21,6 +21,7 @@ namespace il2cpp_sdk_generator
 
         // Metadata Registration
         public static ulong MetadataRegistrationAddress;
+        public static UInt32 realMetadataUsagesCount = 0;
         public static Il2CppMetadataRegistration64 metadataRegistration64 = null;
         public static ulong[] genericClassesPtrs;
         public static Il2CppGenericClass[] genericClasses;
@@ -41,5 +42,10 @@ namespace il2cpp_sdk_generator
         public static Dictionary<ulong, Il2CppGenericClass> mapGenericClassesByPtrs = new Dictionary<ulong, Il2CppGenericClass>();
         public static Dictionary<ulong, Il2CppGenericInst> mapGenericInstsByPtrs = new Dictionary<ulong, Il2CppGenericInst>();
 
+        public static Dictionary<ulong, Resolvedil2CppGenericClass> mapResolvedGenericClassesByPtrs = new Dictionary<ulong, Resolvedil2CppGenericClass>();
+        
+
+        public static Dictionary<ulong, ulong> mapMethodPtrsByMetadataUsages = new Dictionary<ulong, ulong>(); // VA, VA
+        public static Dictionary<ulong, UInt32> mapStringLiteralPtrsByMetadataUsages = new Dictionary<ulong, UInt32>(); // VA, UInt32
     }
 }

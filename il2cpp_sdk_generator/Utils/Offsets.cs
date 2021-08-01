@@ -5,7 +5,7 @@ using System.Text;
 
 namespace il2cpp_sdk_generator
 {
-    class VA
+    public class VA
     {
         public static UInt64 FromRVA(UInt64 rva)
         {
@@ -23,7 +23,7 @@ namespace il2cpp_sdk_generator
         }
     }
 
-    class RVA
+    public class RVA
     {
         // TODO: decide if return 0 or INVALID_RVA value if va is lower than imageBase somehow
         public static UInt64 FromVA(UInt64 va)
@@ -42,7 +42,7 @@ namespace il2cpp_sdk_generator
         }
     }
 
-    class Offset
+    public class Offset
     {
         // TODO: decide if return 0 or INVALID_OFFSET value
         public static UInt64 FromRVA(UInt64 rva)

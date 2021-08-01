@@ -44,6 +44,14 @@ namespace il2cpp_sdk_generator
                     DemangleTypes(resolvedNamespace.Value);
                 }
             }
+
+            MetadataReader.mapSimpleTypeStringCache.Clear();
+            MetadataReader.mapTypeStringCache.Clear();
+            
+            //foreach (var genericClass in MetadataReader.mapResolvedGenericClasses.Values)
+            //{
+            //    genericClass.TestInsideTypes();
+            //}
         }
 
         static void DemangleTypeNames(ResolvedNamespace resolvedNamespace, Dictionary<string, Int32> dict)
@@ -51,6 +59,32 @@ namespace il2cpp_sdk_generator
             for (int k = 0; k < resolvedNamespace.Types.Count; k++)
             {
                 ResolvedType resolvedType = resolvedNamespace.Types[k];
+                resolvedType.DemangleNestedTypeNames();
+                if (resolvedType.Name.isCSharpIdentifier())
+                {
+                    if (resolvedType.Name.isCppIdentifier())
+                        continue;
+
+                    resolvedType.Name = resolvedType.Name.Replace('<', '_').Replace('>', '_');
+                    continue;
+                }
+
+                // Get Demangled type prefix
+                string demangledPrefix = resolvedType.DemangledPrefix();
+                if (!dict.TryGetValue(demangledPrefix, out var idx))
+                {
+                    dict.Add(demangledPrefix, 0);
+                    idx = 0;
+                }
+                idx++;
+
+                resolvedType.Name = $"{demangledPrefix}{idx}";
+                dict[demangledPrefix] = idx;
+            }
+
+            for (int k = 0; k < resolvedNamespace.Enums.Count; k++)
+            {
+                ResolvedType resolvedType = resolvedNamespace.Enums[k];
                 resolvedType.DemangleNestedTypeNames();
                 if (resolvedType.Name.isCSharpIdentifier())
                 {
@@ -82,7 +116,12 @@ namespace il2cpp_sdk_generator
         {
             for (int k = 0; k < resolvedNamespace.Types.Count; k++)
             {
-                resolvedNamespace.Types[k].Demangle();
+                resolvedNamespace.Types[k].Demangle(false);
+            }
+
+            for (int k = 0; k < resolvedNamespace.Enums.Count; k++)
+            {
+                resolvedNamespace.Enums[k].Demangle(false);
             }
         }
 
@@ -93,7 +132,7 @@ namespace il2cpp_sdk_generator
             // Resolve type here
             if (resolvedType is ResolvedEnum || resolvedType is ResolvedClass)
             {
-                resolvedType.Demangle();
+                resolvedType.Demangle(false);
             }
 
             if (resolvedType.parentType != null)

@@ -7,7 +7,7 @@ namespace il2cpp_sdk_generator
 {
     public class ResolvedObject
     {
-        public string Name = null;
+        public virtual string Name { get; set; }
 
         public bool isMangled { get; set; }
     }

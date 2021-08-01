@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,6 +18,7 @@ namespace il2cpp_sdk_generator
             typeDefinitionIndex = idx;
             Name = MetadataReader.GetString(typeDef.nameIndex);
             Namespace = MetadataReader.GetString(typeDef.namespaceIndex);
+            isMangled = !Name.isCSharpIdentifier();
         }
 
         public override void Resolve()
@@ -37,6 +39,42 @@ namespace il2cpp_sdk_generator
             }
 
             isResolved = true;
+        }
+
+        public override async Task ToHeaderCode(StreamWriter sw, Int32 indent = 0)
+        {
+            if (!isNested)
+            {
+                await sw.WriteAsync("#pragma once\n\n".Indent(indent));
+                // Namespace
+                if (Namespace != "")
+                {
+                    await sw.WriteAsync($"namespace {CppNamespace()}\n".Indent(indent));
+                    await sw.WriteAsync("{\n".Indent(indent));
+                    indent += 2;
+                }
+            }
+
+            await sw.WriteAsync($"// Interface TypeDefinitionIndex: {typeDefinitionIndex}\n".Indent(indent));
+
+            //if (typeDef.genericContainerIndex >= 0)
+            //    code += $"{genericTemplate}\n".Indent(indent);
+            await sw.WriteAsync($"struct {Name}".Indent(indent));
+            if (parentType != null)
+                await sw.WriteAsync($" : {parentType.GetFullName()}");
+            else
+                await sw.WriteAsync($" : Il2CppObject");
+            await sw.WriteAsync("\n");
+            await sw.WriteAsync("{\n".Indent(indent));
+
+            await sw.WriteAsync("};\n".Indent(indent));
+
+            // Namespace
+            if (Namespace != "" && !isNested)
+            {
+                indent -= 2;
+                await sw.WriteAsync("}\n".Indent(indent));
+            }
         }
 
         public override string ToHeaderCode(Int32 indent = 0)
@@ -79,6 +117,11 @@ namespace il2cpp_sdk_generator
             return code;
         }
 
+        public override async Task ToCppCode(StreamWriter sw, Int32 indent = 0)
+        {
+            await Task.Delay(1);
+        }
+
         private void MakeGenericTemplate()
         {
             Il2CppGenericContainer generic_container = Metadata.genericContainers[typeDef.genericContainerIndex];
@@ -97,6 +140,11 @@ namespace il2cpp_sdk_generator
         public override string DemangledPrefix()
         {
             return GetVisibility()+"Interface";
+        }
+
+        public override string ToCppCode(Int32 indent = 0)
+        {
+            return "";
         }
     }
 }

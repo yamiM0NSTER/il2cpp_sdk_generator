@@ -9,8 +9,8 @@ namespace il2cpp_sdk_generator
 {
     class il2cppReader
     {
-        private static BinaryReader reader;
-        private static MemoryStream stream;
+        public static BinaryReader reader;
+        public static MemoryStream stream;
 
         public static void Init(MemoryStream memoryStream)
         {
@@ -46,6 +46,24 @@ namespace il2cpp_sdk_generator
                     continue;
 
                 Metadata.resolvedTypes[i].parentType = MetadataReader.ResolveType(type.data.klassIndex);
+                //Metadata.resolvedTypes[i].ResolveOverrides();
+            }
+            for (int i = 0; i < Metadata.typeDefinitions.Length; i++)
+            {
+                Metadata.resolvedTypes[i].ResolveOverrides();
+            }
+
+            for (int i = 0; i < il2cpp.genericClassesPtrs.Length; i++)
+            {
+                if(!il2cpp.mapResolvedGenericClassesByPtrs.TryGetValue(il2cpp.genericClassesPtrs[i], out var genericClass))
+                {
+                    genericClass = new Resolvedil2CppGenericClass(il2cpp.genericClasses[i]);
+                    il2cpp.mapResolvedGenericClassesByPtrs.Add(il2cpp.genericClassesPtrs[i], genericClass);
+                }
+                if (MetadataReader.mapResolvedGenericClasses.TryGetValue((int)il2cpp.genericClasses[i].typeDefinitionIndex, out var resolvedGenericClass))
+                {
+                    resolvedGenericClass.genericClasses.Add(genericClass);
+                }
             }
             // Test ToCode output
             //for (int i = 0; i < Metadata.typeDefinitions.Length; i++)
@@ -75,7 +93,7 @@ namespace il2cpp_sdk_generator
             //    for (int k = 0; k < pointers.Length; k++)
             //    {
             //        Il2CppType il2CppType = il2cppReader.GetIl2CppType(pointers[k]);
-                    
+
             //        typeStr += MetadataReader.GetTypeString(il2CppType);
             //        if (k < pointers.Length - 1)
             //            typeStr += ",";
@@ -96,8 +114,8 @@ namespace il2cpp_sdk_generator
                 if (il2cpp.methodPointers[i] == 0)
                     continue;
 
-                if (CodeScanner.funcPtrs.Contains(il2cpp.methodPointers[i]))
-                    continue;
+                //if (CodeScanner.funcPtrs.Contains(il2cpp.methodPointers[i]))
+                //    continue;
 
                 CodeScanner.funcPtrs.Add(il2cpp.methodPointers[i]);
                 //Console.WriteLine($"[0x{il2cpp.methodPointers[i]:X8}]");
@@ -107,8 +125,8 @@ namespace il2cpp_sdk_generator
                 if (il2cpp.reversePInvokeWrappers[i] == 0)
                     continue;
 
-                if (CodeScanner.funcPtrs.Contains(il2cpp.reversePInvokeWrappers[i]))
-                    continue;
+                //if (CodeScanner.funcPtrs.Contains(il2cpp.reversePInvokeWrappers[i]))
+                //    continue;
 
                 CodeScanner.funcPtrs.Add(il2cpp.reversePInvokeWrappers[i]);
             }
@@ -117,8 +135,8 @@ namespace il2cpp_sdk_generator
                 if (il2cpp.genericMethodPointers[i] == 0)
                     continue;
 
-                if (CodeScanner.funcPtrs.Contains(il2cpp.genericMethodPointers[i]))
-                    continue;
+                //if (CodeScanner.funcPtrs.Contains(il2cpp.genericMethodPointers[i]))
+                //    continue;
 
                 CodeScanner.funcPtrs.Add(il2cpp.genericMethodPointers[i]);
             }
@@ -127,8 +145,8 @@ namespace il2cpp_sdk_generator
                 if (il2cpp.invokerPointers[i] == 0)
                     continue;
 
-                if (CodeScanner.funcPtrs.Contains(il2cpp.invokerPointers[i]))
-                    continue;
+                //if (CodeScanner.funcPtrs.Contains(il2cpp.invokerPointers[i]))
+                //    continue;
 
                 CodeScanner.funcPtrs.Add(il2cpp.invokerPointers[i]);
             }
@@ -137,8 +155,8 @@ namespace il2cpp_sdk_generator
                 if (il2cpp.unresolvedVirtualCallPointers[i] == 0)
                     continue;
 
-                if (CodeScanner.funcPtrs.Contains(il2cpp.unresolvedVirtualCallPointers[i]))
-                    continue;
+                //if (CodeScanner.funcPtrs.Contains(il2cpp.unresolvedVirtualCallPointers[i]))
+                //    continue;
 
                 CodeScanner.funcPtrs.Add(il2cpp.unresolvedVirtualCallPointers[i]);
             }
@@ -148,6 +166,22 @@ namespace il2cpp_sdk_generator
             CodeScanner.funcPtrs.Sort();
             Console.WriteLine($"[0x{CodeScanner.funcPtrs[0]:X8}]");
             Console.WriteLine($"[0x{CodeScanner.funcPtrs[CodeScanner.funcPtrs.Count - 1]:X8}]");
+
+            foreach(var pair in Metadata.usageMethods)
+            {
+                var methodPtr = il2cpp.methodPointers[Metadata.methodDefinitions[pair.Value].methodIndex];
+                var methodRefAddr = il2cpp.metadataUsages[pair.Key];
+                il2cpp.mapMethodPtrsByMetadataUsages.Add(methodRefAddr, methodPtr);
+            }
+
+            //mapStringLiteralPtrsByMetadataUsages
+            foreach (var pair in Metadata.usageStringLiterals)
+            {
+                var stringLiteralRefAddr = il2cpp.metadataUsages[pair.Key];
+                il2cpp.mapStringLiteralPtrsByMetadataUsages.Add(stringLiteralRefAddr, pair.Value);
+            }
+
+            MetadataReader.ProcessDefaultParamValues();
         }
 
         private static void ReadMetadataRegistration()
@@ -161,6 +195,8 @@ namespace il2cpp_sdk_generator
                 stream.Position = (long)Offset.FromVA(il2cpp.genericClassesPtrs[i]);
                 il2cpp.genericClasses[i] = reader.Read<Il2CppGenericClass>();
                 il2cpp.mapGenericClassesByPtrs.Add(il2cpp.genericClassesPtrs[i], il2cpp.genericClasses[i]);
+                
+                //MetadataReader.mapResolvedGenericClasses[(int)il2cpp.genericClasses[i].typeDefinitionIndex].genericClasses.Add(il2cpp.genericClasses[i]);
                 // These should always be 0 because we don't execute code
                 if (il2cpp.genericClasses[i].cached_classPtr != 0)
                     il2cpp.genericClasses[i].DumpToConsole();
@@ -250,7 +286,7 @@ namespace il2cpp_sdk_generator
 
             Console.WriteLine($"il2cpp.metadataRegistration64.metadataUsages: 0x{il2cpp.metadataRegistration64.metadataUsages:X8}");
             stream.Position = (long)Offset.FromVA(il2cpp.metadataRegistration64.metadataUsages);
-            il2cpp.metadataUsages = reader.ReadArray<ulong>((int)il2cpp.metadataRegistration64.metadataUsagesCount);
+            il2cpp.metadataUsages = reader.ReadArray<ulong>((int)il2cpp.realMetadataUsagesCount+1);
             //for (int i = 0; i < il2cpp.metadataUsages.Length; i++)
             //{
             //    il2cpp.metadataUsages[i].DumpToConsole();
@@ -347,32 +383,60 @@ namespace il2cpp_sdk_generator
         {
             if (!il2cpp.mapArrayTypesByPtrs.TryGetValue(ptr, out Il2CppArrayType ret))
             {
-                stream.Position = (long)Offset.FromVA(ptr);
-                ret = reader.Read<Il2CppArrayType>();
-                il2cpp.mapArrayTypesByPtrs.Add(ptr, ret);
+                lock (il2cpp.mapArrayTypesByPtrs) lock (stream)
+                {
+                    stream.Position = (long)Offset.FromVA(ptr);
+                    ret = reader.Read<Il2CppArrayType>();
+                    il2cpp.mapArrayTypesByPtrs.Add(ptr, ret);
+                }
             }
             return ret;
         }
 
-        public static Il2CppGenericClass GetIl2CppGenericClass(ulong ptr)
+        public static Resolvedil2CppGenericClass GetIl2CppGenericClass(ulong ptr)
         {
-            if (!il2cpp.mapGenericClassesByPtrs.TryGetValue(ptr, out Il2CppGenericClass ret))
+            //if (!mapReferenceTest.TryGetValue(ptr, out int val))
+            //{
+            //    mapReferenceTest[ptr] = 0;
+            //}
+            //mapReferenceTest[ptr]++;
+
+            //if (!il2cpp.mapGenericClassesByPtrs.TryGetValue(ptr, out Il2CppGenericClass ret))
+            //{
+            //    stream.Position = (long)Offset.FromVA(ptr);
+            //    ret = reader.Read<Il2CppGenericClass>();
+            //    il2cpp.mapGenericClassesByPtrs.Add(ptr, ret);
+            //}
+
+            if (!il2cpp.mapResolvedGenericClassesByPtrs.TryGetValue(ptr, out Resolvedil2CppGenericClass ret))
             {
                 stream.Position = (long)Offset.FromVA(ptr);
-                ret = reader.Read<Il2CppGenericClass>();
-                il2cpp.mapGenericClassesByPtrs.Add(ptr, ret);
+                Il2CppGenericClass genericClass = reader.Read<Il2CppGenericClass>();
+                ret = new Resolvedil2CppGenericClass(genericClass);
+                il2cpp.mapResolvedGenericClassesByPtrs.Add(ptr, ret);
             }
+
             return ret;
         }
+
+        static Dictionary<ulong, int> mapReferenceTest = new Dictionary<ulong, int>();
 
         public static Il2CppGenericInst GetIl2CppGenericInst(ulong ptr)
         {
+            //if(!mapReferenceTest.TryGetValue(ptr, out int val))
+            //{
+            //    mapReferenceTest[ptr] = 0;
+            //}
+            //mapReferenceTest[ptr]++;
+
             if (!il2cpp.mapGenericInstsByPtrs.TryGetValue(ptr, out Il2CppGenericInst ret))
             {
                 stream.Position = (long)Offset.FromVA(ptr);
                 ret = reader.Read<Il2CppGenericInst>();
                 il2cpp.mapGenericInstsByPtrs.Add(ptr, ret);
             }
+
+            
             return ret;
         }
 

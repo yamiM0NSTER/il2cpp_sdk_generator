@@ -123,7 +123,7 @@ namespace il2cpp_sdk_generator
 
         public static T[] ReadArray<T>(this BinaryReader reader, int arrSize) where T : new()
         {
-            Console.WriteLine($"arrSize: {arrSize} * {typeof(T).Name}");
+            //Console.WriteLine($"arrSize: {arrSize} * {typeof(T).Name}");
             T[] retArr = new T[arrSize];
 
             for (var i = 0; i < arrSize; i++)
@@ -143,6 +143,19 @@ namespace il2cpp_sdk_generator
             return System.Text.Encoding.UTF8.GetString(arrayBuilder.ToArray());
         }
 
+        public static string ReadString(this BinaryReader reader, UInt32 len)
+        {
+            ArrayBuilder arrayBuilder = new ArrayBuilder();
+            byte uc;
+            for(int i=0;i<len;i++)
+            {
+                uc = reader.ReadByte();
+                arrayBuilder.Append(uc);
+            }
+                
+            return System.Text.Encoding.UTF8.GetString(arrayBuilder.ToArray());
+        }
+
         // signed
         static Type sbyte_t = typeof(System.SByte);
         static Type int16_t = typeof(System.Int16);
@@ -153,6 +166,10 @@ namespace il2cpp_sdk_generator
         static Type uint16_t = typeof(System.UInt16);
         static Type uint32_t = typeof(System.UInt32);
         static Type uint64_t = typeof(System.UInt64);
+
+        static Type bool_t = typeof(System.Boolean);
+        static Type float_t = typeof(System.Single);
+        static Type double_t = typeof(System.Double);
 
         public static object ReadPrimitive(this BinaryReader reader, Type t)
         {
@@ -174,6 +191,14 @@ namespace il2cpp_sdk_generator
                 return reader.ReadUInt32();
             if (t == uint64_t)
                 return reader.ReadUInt64();
+
+            if (t == bool_t)
+                return reader.ReadBoolean();
+
+            if (t == float_t)
+                return reader.ReadSingle();
+            if (t == double_t)
+                return reader.ReadDouble();
 
             throw new NotSupportedException();
         }

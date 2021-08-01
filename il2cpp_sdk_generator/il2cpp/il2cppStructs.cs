@@ -18,7 +18,7 @@ namespace il2cpp_sdk_generator
 {
     // All structs are spaced by 8 bytes cuz of x64
 
-    class Il2CppMetadataRegistration64
+    public class Il2CppMetadataRegistration64
     {
         public long genericClassesCount;
         public ulong genericClasses; // // Il2CppGenericClass* const *
@@ -36,7 +36,7 @@ namespace il2cpp_sdk_generator
 
         public long typeDefinitionsSizesCount;
         public ulong typeDefinitionsSizes; // const Il2CppTypeDefinitionSizes**
-        public long metadataUsagesCount;
+        public long metadataUsagesCount; // <-- this value doesn't seem to be ever used
         public ulong metadataUsages; // void** const*
 
         // use typeDefinitions from metadata to validate?
@@ -145,7 +145,7 @@ namespace il2cpp_sdk_generator
         }
     }
 
-    class Il2CppCodeRegistration64
+    public class Il2CppCodeRegistration64
     {
         public long methodPointersCount;
         public ulong methodPointers; // Il2CppMethodPointer
@@ -281,7 +281,7 @@ namespace il2cpp_sdk_generator
         }
     }
 
-    class Il2CppInteropData
+    public class Il2CppInteropData
     {
         public ulong delegatePInvokeWrapperFunction; // Il2CppMethodPointer
         public ulong pinvokeMarshalToNativeFunction; // PInvokeMarshalToNativeFunc
@@ -292,7 +292,7 @@ namespace il2cpp_sdk_generator
         public ulong type; // const Il2CppType*
     }
 
-    class Il2CppGenericClass
+    public class Il2CppGenericClass
     {
         /// <summary>
         /// the generic type definition
@@ -303,18 +303,18 @@ namespace il2cpp_sdk_generator
         /// </summary>
         public Il2CppGenericContext context; // Il2CppGenericContext
         /// <summary>
-        /// if present, the Il2CppClass corresponding to the instantiation.
+        /// if present, the Il2CppClass pointer corresponding to the instantiation.
         /// </summary>
         public ulong cached_classPtr; // Il2CppClass*
     }
 
-    class Il2CppGenericInst
+    public class Il2CppGenericInst
     {
         public ulong type_argc; // uint32_t
         public ulong type_argv; // Il2CppType** aka. array of pointers to Il2CppType
     }
 
-    class Il2CppGenericContext
+    public class Il2CppGenericContext
     {
         /// <summary>
         /// The instantiation corresponding to the class generic parameters
@@ -326,13 +326,13 @@ namespace il2cpp_sdk_generator
         public ulong method_instPtr; // Il2CppGenericInst*
     }
 
-    class Il2CppGenericMethodFunctionsDefinitions
+    public class Il2CppGenericMethodFunctionsDefinitions
     {
         public GenericMethodIndex genericMethodIndex;
         public Il2CppGenericMethodIndices indices;
     }
 
-    class Il2CppGenericMethodIndices
+    public class Il2CppGenericMethodIndices
     {
         public MethodIndex methodIndex;
         public MethodIndex invokerIndex;
@@ -489,7 +489,7 @@ namespace il2cpp_sdk_generator
     }
 
     // For whatever reason this doesn't have 8 byte spacing
-    class Il2CppMethodSpec
+    public class Il2CppMethodSpec
     {
         public MethodIndex methodDefinitionIndex;
         public GenericInstIndex classIndexIndex;
@@ -497,7 +497,7 @@ namespace il2cpp_sdk_generator
     }
 
     // For whatever reason this doesn't have 8 byte spacing
-    class Il2CppTypeDefinitionSizes
+    public class Il2CppTypeDefinitionSizes
     {
         public uint32_t instance_size;
         public int32_t native_size;
@@ -505,7 +505,7 @@ namespace il2cpp_sdk_generator
         public uint32_t thread_static_fields_size;
     }
 
-    class Il2CppArrayType
+    public class Il2CppArrayType
     {
         public ulong etypePtr; // const Il2CppType*
         public uint8_t rank;

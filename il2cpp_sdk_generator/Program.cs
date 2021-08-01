@@ -55,8 +55,12 @@ namespace il2cpp_sdk_generator
             // Demangle again to clean up?
             //Demangler.Demangle();
 
+            Console.WriteLine("Rules done");
+            Console.ReadLine();
+
             CppOutput.Output();
 
+            Console.WriteLine("Finito");
             Console.ReadLine();
         }
 

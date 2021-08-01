@@ -41,7 +41,7 @@ using System.Reflection;
 
 namespace il2cpp_sdk_generator
 {
-    class Il2CppGlobalMetadataHeader
+    public class Il2CppGlobalMetadataHeader
     {
         public int32_t sanity;
         public int32_t version;
@@ -224,7 +224,7 @@ namespace il2cpp_sdk_generator
         public uint32_t token;
     }
 
-    class Il2CppFieldRef
+    public class Il2CppFieldRef
     {
         public TypeIndex typeIndex;
         public FieldIndex fieldIndex; // local offset into type fields
@@ -237,7 +237,7 @@ namespace il2cpp_sdk_generator
         public TypeIndex typeIndex;
     }
 
-    class Il2CppParameterDefaultValue
+    public class Il2CppParameterDefaultValue
     {
         public ParameterIndex parameterIndex;
         public TypeIndex typeIndex;
@@ -251,7 +251,7 @@ namespace il2cpp_sdk_generator
         public uint32_t token;
     }
 
-    class Il2CppFieldDefaultValue
+    public class Il2CppFieldDefaultValue
     {
         public FieldIndex fieldIndex;
         public TypeIndex typeIndex;
@@ -267,32 +267,73 @@ namespace il2cpp_sdk_generator
         public uint32_t token;
     }
 
-    class Il2CppMetadataUsageList
+    public class Il2CppMetadataUsageList
     {
         public uint32_t start;
         public uint32_t count;
     }
 
-    class Il2CppMetadataUsagePair
+    // Encoded index (1 bit)
+    // MethodDef - 0
+    // MethodSpec - 1
+    // We use the top 3 bits to indicate what table to index into
+    // Type              Binary            Hex
+    // Il2CppClass       001               0x20000000
+    // Il2CppType        010               0x40000000
+    // MethodInfo        011               0x60000000
+    // FieldInfo         100               0x80000000
+    // StringLiteral     101               0xA0000000
+    // MethodRef         110               0xC0000000
+
+    public enum Il2CppMetadataUsage
+    {
+        kIl2CppMetadataUsageInvalid,
+        kIl2CppMetadataUsageTypeInfo,
+        kIl2CppMetadataUsageIl2CppType,
+        kIl2CppMetadataUsageMethodDef,
+        kIl2CppMetadataUsageFieldInfo,
+        kIl2CppMetadataUsageStringLiteral,
+        kIl2CppMetadataUsageMethodRef,
+    }
+
+    public class Il2CppMetadataUsagePair
     {
         public uint32_t destinationIndex;
         public uint32_t encodedSourceIndex;
+
+        // static inline Il2CppMetadataUsage GetEncodedIndexType(EncodedMethodIndex index)
+        public Il2CppMetadataUsage EncodedIndexType
+        {
+            get
+            {
+                return (Il2CppMetadataUsage)((encodedSourceIndex & 0xE0000000) >> 29);
+            }
+        }
+
+        // static inline uint32_t GetDecodedMethodIndex(EncodedMethodIndex index)
+        public UInt32 DecodedMethodIndex
+        {
+            get
+            {
+                return encodedSourceIndex & 0x1FFFFFFFU;
+            }
+        }
     }
 
-    class Il2CppCustomAttributeTypeRange
+    public class Il2CppCustomAttributeTypeRange
     {
         public uint32_t token;
         public int32_t start;
         public int32_t count;
     }
 
-    class Il2CppStringLiteral
+    public class Il2CppStringLiteral
     {
         public uint32_t length;
         public StringLiteralIndex dataIndex;
     }
 
-    class Il2CppGenericParameter
+    public class Il2CppGenericParameter
     {
         public GenericContainerIndex ownerIndex;  /* Type or method this parameter was defined in. */
         public StringIndex nameIndex;
@@ -302,7 +343,7 @@ namespace il2cpp_sdk_generator
         public uint16_t flags;
     }
 
-    class Il2CppGenericContainer
+    public class Il2CppGenericContainer
     {
         /* index of the generic type definition or the generic method definition corresponding to this container */
         public int32_t ownerIndex; // either index into Il2CppClass metadata array or Il2CppMethodDefinition array
@@ -314,7 +355,7 @@ namespace il2cpp_sdk_generator
     }
 
     [StructLayout(LayoutKind.Explicit)]
-    class Il2CppRGCTXDefinitionData
+    public class Il2CppRGCTXDefinitionData
     {
         [FieldOffset(0)]
         public int32_t rgctxDataDummy;
@@ -324,7 +365,7 @@ namespace il2cpp_sdk_generator
         public TypeIndex typeIndex;
     }
 
-    enum Il2CppRGCTXDataType
+    public enum Il2CppRGCTXDataType
     {
         IL2CPP_RGCTX_DATA_INVALID,
         IL2CPP_RGCTX_DATA_TYPE,
@@ -333,19 +374,19 @@ namespace il2cpp_sdk_generator
         IL2CPP_RGCTX_DATA_ARRAY,
     }
 
-    class Il2CppRGCTXDefinition
+    public class Il2CppRGCTXDefinition
     {
         public Il2CppRGCTXDataType type;
         public Il2CppRGCTXDefinitionData data;
     }
 
-    class Il2CppInterfaceOffsetPair
+    public class Il2CppInterfaceOffsetPair
     {
         public TypeIndex interfaceTypeIndex;
         public int32_t offset;
     }
-    
-    class Il2CppAssemblyNameDefinition
+
+    public class Il2CppAssemblyNameDefinition
     {
         public StringIndex nameIndex;
         public StringIndex cultureIndex;
@@ -361,8 +402,8 @@ namespace il2cpp_sdk_generator
         [ArraySize(Metadata_Constants.PUBLIC_KEY_BYTE_LENGTH)]
         public uint8_t[] public_key_token;
     }
-    
-    class Il2CppAssemblyDefinition
+
+    public class Il2CppAssemblyDefinition
     {
         public ImageIndex imageIndex;
         public uint32_t token;

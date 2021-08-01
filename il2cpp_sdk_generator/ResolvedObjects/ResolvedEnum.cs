@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace il2cpp_sdk_generator
 {
-    class ResolvedEnum : ResolvedType
+    public class ResolvedEnum : ResolvedType
     {
         public Dictionary<string, object> values = new Dictionary<string, object>();
 
@@ -16,6 +17,7 @@ namespace il2cpp_sdk_generator
             typeDefinitionIndex = idx;
             Name = MetadataReader.GetString(typeDef.nameIndex);
             Namespace = MetadataReader.GetString(typeDef.namespaceIndex);
+            isMangled = !Name.isCSharpIdentifier();
         }
 
         public override void Resolve()
@@ -38,21 +40,114 @@ namespace il2cpp_sdk_generator
                 //typeDef.
                 UInt32 offset = il2cppReader.GetFieldOffset(typeDefinitionIndex, k);
 
-                this.values.Add(MetadataReader.GetString(fieldDef.nameIndex), val);
+                string fieldName = MetadataReader.GetString(fieldDef.nameIndex);
+
+                FixCppMacros(ref fieldName);
+
+                this.values.Add(fieldName, val);
             }
 
             isResolved = true;
+        }
+
+        static string[] macros =
+            {
+                "ERROR",
+                "TRUE",
+                "FALSE"
+            };
+
+        void FixCppMacros(ref string fieldName)
+        {
+            if(macros.Contains(fieldName))
+            {
+                fieldName = $"_{fieldName}";
+            }
+        }
+
+        public override async Task ToHeaderCode(StreamWriter sw, Int32 indent = 0)
+        {
+            if (!isNested)
+            {
+                await sw.WriteAsync("".Indent(indent));
+                sw.Write("#include \"pch.h\"\n\n");
+                // Namespace
+                if (Namespace != "")
+                {
+                    sw.Write($"namespace {CppNamespace()}\n".Indent(indent));
+                    sw.Write("{\n".Indent(indent));
+                    indent += 2;
+                }
+            }
+
+            string NestedNameStr = DeclarationString();
+            //code += $"enum class {Name}\n".Indent(indent);
+            sw.Write($"enum class {NestedNameStr}\n".Indent(indent));
+            sw.Write("{\n".Indent(indent));
+            foreach (var pair in values)
+            {
+                //sw.Write($"{pair.Key} = 0x{pair.Value:X},\n".Indent(indent + 2));
+                sw.Write($"{pair.Key} = {pair.Value},\n".Indent(indent + 2));
+            }
+            sw.Write("};\n".Indent(indent));
+
+            // end of Namespace
+            if (Namespace != "" && !isNested)
+            {
+                indent -= 2;
+                sw.Write("}\n".Indent(indent));
+            }
         }
 
         public override string ToHeaderCode(Int32 indent = 0)
         {
             string code = "";
 
-            code += $"enum {Name}\n".Indent(indent);
+            if (!isNested)
+            {
+                code = code.Indent(indent);
+                code += "#include \"pch.h\"\n\n";
+                // Namespace
+                if (Namespace != "")
+                {
+                    code += $"namespace {CppNamespace()}\n".Indent(indent);
+                    code += "{\n".Indent(indent);
+                    indent += 2;
+                }
+            }
+
+            string NestedNameStr = DeclarationString();
+            //code += $"enum class {Name}\n".Indent(indent);
+            code += $"enum class {NestedNameStr}\n".Indent(indent);
             code += "{\n".Indent(indent);
             foreach(var pair in values)
             {
-                code += $"{pair.Key} = {pair.Value},\n".Indent(indent+2);
+                code += $"{pair.Key} = 0x{pair.Value:X},\n".Indent(indent+2);
+            }
+            code += "};\n".Indent(indent);
+
+            // end of Namespace
+            if (Namespace != "" && !isNested)
+            {
+                indent -= 2;
+                code += "}\n".Indent(indent);
+            }
+
+            return code;
+        }
+
+        public override string ToHeaderCodeGlobal(Int32 indent = 0)
+        {
+            string code = "";
+
+            string NestedNameStr = DeclarationString();
+            //code += $"enum class {Name}\n".Indent(indent);
+            code += $"enum class {NestedNameStr}\n".Indent(indent);
+            code += "{\n".Indent(indent);
+            foreach (var pair in values)
+            {
+                //code += $"{pair.Key} = 0x{pair.Value:X},\n".Indent(indent + 2);
+                code += $"{pair.Key} = {pair.Value},\n".Indent(indent + 2);
             }
             code += "};\n".Indent(indent);
 
@@ -64,7 +159,7 @@ namespace il2cpp_sdk_generator
             return GetVisibility() + "Enum";
         }
 
-        public override void Demangle()
+        public override void Demangle(bool force = false)
         {
             Dictionary<string, object> demangledValues = new Dictionary<string, object>();
             int idx = 1;
@@ -114,6 +209,21 @@ namespace il2cpp_sdk_generator
             values = demangledValues;
 
             return null;
+        }
+
+        public override async Task ToCppCode(StreamWriter sw, Int32 indent = 0)
+        {
+            await Task.Delay(1);
+        }
+
+        public override string ToCppCode(Int32 indent = 0)
+        {
+            return "";
+        }
+
+        public override string ForwardDeclaration(Int32 indent = 0)
+        {
+            return $"enum class {Name};\n".Indent(indent);
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -23,7 +24,7 @@ namespace il2cpp_sdk_generator
         // Methods
         public List<ResolvedMethod> instanceMethods = new List<ResolvedMethod>();
         public List<ResolvedMethod> staticMethods = new List<ResolvedMethod>();
-        Dictionary<Int32, ResolvedMethod> slottedMethods = new Dictionary<Int32, ResolvedMethod>();
+        public Dictionary<Int32, ResolvedMethod> slottedMethods = new Dictionary<Int32, ResolvedMethod>();
         public List<ResolvedMethod> miMethods = new List<ResolvedMethod>();
 
         public ResolvedClass(Il2CppTypeDefinition type, Int32 idx)
@@ -45,13 +46,14 @@ namespace il2cpp_sdk_generator
             if (typeDef.genericContainerIndex >= 0)
             {
                 isGeneric = true;
-                if (Name.Contains('`'))
-                {
-                    int idx = Name.IndexOf('`');
-                    Name = Name.Remove(idx, Name.Length - idx);
-                }
+                Name = Name.Replace("`", "_");
+                //if (Name.Contains('`'))
+                //{
+                //    int idx = Name.IndexOf('`');
+                //    Name = Name.Remove(idx, Name.Length - idx);
+                //}
 
-                MakeGenericTemplate();
+                //MakeGenericTemplate();
             }
 
             // Resolve fields
@@ -63,7 +65,7 @@ namespace il2cpp_sdk_generator
 
                 if (resolvedField.isStatic)
                     staticFields.Add(resolvedField);
-                else if(resolvedField.isConst)
+                else if (resolvedField.isConst)
                     constFields.Add(resolvedField);
                 else
                     instanceFields.Add(resolvedField);
@@ -105,13 +107,20 @@ namespace il2cpp_sdk_generator
             for (int i = 0; i < typeDef.method_count; i++)
             {
                 Il2CppMethodDefinition methodDef = Metadata.methodDefinitions[typeDef.methodStart + i];
+
+                if (typeDef.genericContainerIndex < 0 && methodDef.genericContainerIndex >= 0)
+                {
+
+                }
+
                 // For now skip generic methods
                 if (methodDef.genericContainerIndex >= 0)
                     continue;
 
-                ResolvedMethod resolvedMethod = new ResolvedMethod(methodDef, typeDef.methodStart + i);
-                resolvedMethod.declaringType = this;
+                ResolvedMethod resolvedMethod = new ResolvedMethod(methodDef, typeDef.methodStart + i, this);
                 miMethods.Add(resolvedMethod);
+                if (methodDef.slot != il2cpp_Constants.kInvalidIl2CppMethodSlot)
+                    slottedMethods.Add(methodDef.slot, resolvedMethod);
                 if (propertyMethods.TryGetValue(i, out var resolvedProperty))
                 {
                     resolvedMethod.isReferenced = true;
@@ -126,19 +135,19 @@ namespace il2cpp_sdk_generator
                     continue;
                 }
 
-                if(methodDef.slot != il2cpp_Constants.kInvalidIl2CppMethodSlot)
-                    slottedMethods.Add(methodDef.slot, resolvedMethod);
-
                 if (!resolvedMethod.isStatic)
                     instanceMethods.Add(resolvedMethod);
                 else
+                {
                     staticMethods.Add(resolvedMethod);
+                }
+
                 //if (methodDef.genericContainerIndex >= 0 && name == "GetComponent")
                 //    Console.WriteLine();
             }
 
             // Split properties into instanced and static
-            for(int i = 0;i< properties.Length;i++)
+            for (int i = 0; i < properties.Length; i++)
             {
                 if (properties[i].isStatic)
                     staticProperties.Add(properties[i]);
@@ -155,134 +164,578 @@ namespace il2cpp_sdk_generator
                     instanceEvents.Add(events[i]);
             }
 
-            Console.WriteLine("ResolvedClass::Resolve()");
+            //Console.WriteLine("ResolvedClass::Resolve()");
             isResolved = true;
         }
 
-        public override string ToHeaderCode(Int32 indent = 0)
+        public override async Task ToHeaderCode(StreamWriter sw, Int32 indent = 0)
         {
             GenerateMINames();
-            string code = "";
-            
-            if(!isNested)
+
+            if (!isNested)
             {
-                code += "#pragma once\n\n".Indent(indent);
+                await sw.WriteLineAsync("#pragma once".Indent(indent));
+                await sw.WriteLineAsync();
                 // Namespace
                 if (Namespace != "")
                 {
-                    code += $"namespace {CppNamespace()}\n".Indent(indent);
-                    code += "{\n".Indent(indent);
+                    await sw.WriteLineAsync($"namespace {CppNamespace()}".Indent(indent));
+                    await sw.WriteLineAsync("{".Indent(indent));
                     indent += 2;
                 }
             }
 
-            code += $"// Class TypeDefinitionIndex: {typeDefinitionIndex}\n".Indent(indent);
+            await sw.WriteLineAsync($"// Class TypeDefinitionIndex: {typeDefinitionIndex}".Indent(indent));
 
-            if (typeDef.genericContainerIndex >= 0)
-                code += $"{genericTemplate}\n".Indent(indent);
-            code += $"struct {Name}".Indent(indent);
+            //if (typeDef.genericContainerIndex >= 0)
+            //    code += $"{genericTemplate}\n".Indent(indent);
+            string NestedNameStr = DeclarationString();
+            //NestedNameStr = NestedNameStr.Substring(0, NestedNameStr.Length - 2);
+            await sw.WriteAsync($"struct {NestedNameStr}".Indent(indent));
+            //code += $"struct {Name}".Indent(indent);
             if (parentType != null)
-                code += $" : {parentType.GetFullName()}";
+                await sw.WriteAsync($" : {parentType.GetFullName()}");
             else
-                code += $" : Il2CppObject";
-            code += "\n";
-            code += "{\n".Indent(indent);
+                await sw.WriteAsync($" : Il2CppObject");
+            await sw.WriteLineAsync();
+            await sw.WriteLineAsync("{".Indent(indent));
 
-            if(instanceFields.Count > 0)
-            {
-                for (int i = 0; i < instanceFields.Count; i++)
-                {
-                    code += instanceFields[i].ToCode(indent + 2);
-                }
-                code += "\n";
-            }
-            if(instanceProperties.Count > 0)
-            {
-                code += "// Instance Properties\n".Indent(indent + 2);
-                for (int i = 0; i < instanceProperties.Count; i++)
-                {
-                    code += instanceProperties[i].ToCode(indent + 2);
-                }
-                code += "\n";
-            }
-            if (staticProperties.Count > 0)
-            {
-                code += "// Static Properties\n".Indent(indent + 2);
-                for (int i = 0; i < staticProperties.Count; i++)
-                {
-                    code += staticProperties[i].ToCode(indent + 2);
-                }
-                code += "\n";
-            }
-            if (instanceEvents.Count > 0)
-            {
-                code += "// Instance Events\n".Indent(indent + 2);
-                for (int i = 0; i < instanceEvents.Count; i++)
-                {
-                    code += instanceEvents[i].ToCode(indent + 2);
-                }
-                code += "\n";
-            }
-            if (staticEvents.Count > 0)
-            {
-                code += "// Static Events\n".Indent(indent + 2);
-                for (int i = 0; i < staticEvents.Count; i++)
-                {
-                    code += staticEvents[i].ToCode(indent + 2);
-                }
-                code += "\n";
-            }
-            if (instanceMethods.Count > 0)
-            {
-                code += "// Instance Methods\n".Indent(indent + 2);
-                for (int i = 0; i < instanceMethods.Count; i++)
-                {
-                    code += instanceMethods[i].ToHeaderCode(indent + 2);
-                }
-                code += "\n";
-            }
-            if(staticMethods.Count > 0)
-            {
-                code += "// Static Methods\n".Indent(indent + 2);
-                for (int i = 0; i < staticMethods.Count; i++)
-                {
-                    code += staticMethods[i].ToHeaderCode(indent + 2);
-                }
-                code += "\n";
-            }
-                
-            // TODO: Fields, static fields, const fields, properties, methods, (generics), nested types
-            if(nestedTypes.Count > 0)
+            indent += 2;
+
+            if (nestedTypes.Count > 0)
             {
                 for (int i = 0; i < nestedTypes.Count; i++)
                 {
-                    code += nestedTypes[i].ToHeaderCode(indent + 2);
-                    code += "\n";
+                    if (nestedTypes[i].GetType() == typeof(ResolvedInterface))
+                    {
+                        continue;
+                    }
+
+                    await sw.WriteAsync(nestedTypes[i].ForwardDeclaration(indent));
+                    await sw.WriteLineAsync();
                 }
             }
 
-            // il2cpp stuff
-            code += "\n";
-            code += "// il2cpp stuff\n".Indent(indent+2);
-            code += "static Il2CppClass* il2cppClass;\n".Indent(indent+2);
-            code += "// methods\n".Indent(indent + 2);
-            for (int i=0;i<miMethods.Count;i++)
+            if (typeDef.genericContainerIndex == -1)
             {
-                code += $"static MethodInfo* {miMethods[i].MI_Name};\n".Indent(indent+2);
-            }
-            code += "static void il2cpp_init();\n".Indent(indent + 2);
 
-            code += "};\n".Indent(indent);
+                if (instanceFields.Count > 0)
+                {
+                    for (int i = 0; i < instanceFields.Count; i++)
+                    {
+                        await sw.WriteAsync(instanceFields[i].ToCode(indent));
+                    }
+                    await sw.WriteLineAsync();
+                }
+                if (instanceProperties.Count > 0)
+                {
+                    await sw.WriteLineAsync("// Instance Properties".Indent(indent));
+                    for (int i = 0; i < instanceProperties.Count; i++)
+                    {
+                        await instanceProperties[i].ToHeaderCode(sw, indent);
+                    }
+                    await sw.WriteLineAsync();
+                }
+                if (staticProperties.Count > 0)
+                {
+                    await sw.WriteLineAsync("// Static Properties".Indent(indent));
+                    for (int i = 0; i < staticProperties.Count; i++)
+                    {
+                        await staticProperties[i].ToHeaderCode(sw, indent);
+                    }
+                    await sw.WriteLineAsync();
+                }
+                if (instanceEvents.Count > 0)
+                {
+                    await sw.WriteLineAsync("// Instance Events".Indent(indent));
+                    for (int i = 0; i < instanceEvents.Count; i++)
+                    {
+                        await instanceEvents[i].ToHeaderCode(sw, indent);
+                    }
+                    await sw.WriteLineAsync();
+                }
+                if (staticEvents.Count > 0)
+                {
+                    await sw.WriteLineAsync("// Static Events".Indent(indent));
+                    for (int i = 0; i < staticEvents.Count; i++)
+                    {
+                        await staticEvents[i].ToHeaderCode(sw, indent);
+                    }
+                    await sw.WriteLineAsync();
+                }
+                if (instanceMethods.Count > 0)
+                {
+                    await sw.WriteLineAsync("// Instance Methods".Indent(indent));
+                    for (int i = 0; i < instanceMethods.Count; i++)
+                    {
+                        await instanceMethods[i].ToHeaderCode(sw, indent);
+                    }
+                    await sw.WriteLineAsync();
+                }
+                if (staticMethods.Count > 0)
+                {
+                    await sw.WriteLineAsync("// Static Methods".Indent(indent));
+                    for (int i = 0; i < staticMethods.Count; i++)
+                    {
+                        await staticMethods[i].ToHeaderCode(sw, indent);
+                    }
+                    await sw.WriteLineAsync();
+                }
+            }
+            // TODO: Fields, static fields, const fields, properties, methods, (generics), nested types
+
+
+            // il2cpp stuff
+            await sw.WriteLineAsync();
+            //await sw.WriteAsync($"{Name}() {{}}\n".Indent(indent));
+            //await sw.WriteAsync("\n");
+            //await sw.WriteAsync("\n");
+            await sw.WriteLineAsync("// il2cpp stuff".Indent(indent));
+            await sw.WriteLineAsync("static ::Il2CppClass* il2cppClass;".Indent(indent));
+            await sw.WriteLineAsync("static System::Type* il2cppObjectType;".Indent(indent));
+            await sw.WriteLineAsync("// static fields".Indent(indent));
+            for (int i = 0; i < staticFields.Count; i++)
+            {
+                await sw.WriteLineAsync($"static ::FieldInfo* FI_{staticFields[i].Name.CSharpToCppIdentifier()};".Indent(indent));
+            }
+            await sw.WriteLineAsync();
+            await sw.WriteLineAsync("// methods".Indent(indent));
+            for (int i = 0; i < miMethods.Count; i++)
+            {
+                await sw.WriteLineAsync($"static ::MethodInfo* {miMethods[i].MI_Name};".Indent(indent));
+            }
+            await sw.WriteLineAsync("static void il2cpp_init();".Indent(indent));
+            await sw.WriteLineAsync();
+            // Extensions
+            await sw.WriteLineAsync("// Extension methods".Indent(indent));
+
+            await OutputConstructorMethods(sw, indent);
+
+            if (this.Name == "GameObject" && this.Namespace == "UnityEngine")
+            {
+                await GameObjectExtensions(sw, indent);
+            }
+
+            indent -= 2;
+
+            await sw.WriteLineAsync("};".Indent(indent));
+
+            if (Name == "ParticleSystem")
+            {
+                int nBurst = -1;
+                int nMinMaxCurve = -1;
+                for (int i = 0; i < nestedTypes.Count; i++)
+                {
+                    if (nestedTypes[i].Name == "Burst")
+                        nBurst = i;
+                    else if (nestedTypes[i].Name == "MinMaxCurve")
+                        nMinMaxCurve = i;
+                }
+
+                if (nMinMaxCurve >= 0 && nBurst >= 0 && nMinMaxCurve > nBurst)
+                {
+                    ResolvedType resolvedType = nestedTypes[nMinMaxCurve];
+                    nestedTypes[nMinMaxCurve] = nestedTypes[nBurst];
+                    nestedTypes[nBurst] = resolvedType;
+                }
+            }
+
+            if (nestedTypes.Count > 0)
+            {
+                for (int i = 0; i < nestedTypes.Count; i++)
+                {
+                    await nestedTypes[i].ToHeaderCode(sw, indent);
+                    //sw.Write(nestedTypes[i].ToHeaderCode(indent));
+                    await sw.WriteLineAsync();
+                }
+            }
 
             // Namespace
             if (Namespace != "" && !isNested)
             {
                 indent -= 2;
-                code += "}\n".Indent(indent);
+                await sw.WriteLineAsync("}".Indent(indent));
+            }
+        }
+
+        async Task OutputConstructorMethods(StreamWriter sw, Int32 indent = 0)
+        {
+            string NestedNameStr = DeclarationString();
+
+            for (int i = 0; i < instanceMethods.Count; i++)
+            {
+                if (instanceMethods[i].Name == ".ctor")
+                {
+
+                }
+
+                if (instanceMethods[i].Name == "_ctor")
+                {
+
+                }
+
+                if (instanceMethods[i].Name != ".ctor")
+                    continue;
+
+                ResolvedMethod resolvedMethod = instanceMethods[i];
+
+                string returnString = MetadataReader.GetTypeString(resolvedMethod.returnType);
+                await sw.WriteAsync($"static {NestedNameStr}* New(".Indent(indent));
+
+                var resolvedParameters = resolvedMethod.resolvedParameters;
+                for (int k = 0; k < resolvedParameters.Count; k++)
+                {
+                    await sw.WriteAsync(resolvedParameters[k].ToHeaderCode());
+                    if (k < resolvedParameters.Count - 1)
+                        await sw.WriteAsync(", ");
+                }
+                await sw.WriteLineAsync(")");
+                await sw.WriteLineAsync("{".Indent(indent));
+                await sw.WriteLineAsync($"{NestedNameStr}* obj = ({NestedNameStr}*)il2cpp::object_new(il2cppClass);".Indent(indent + 2));
+                string paramStr = "nullptr";
+                if (resolvedParameters.Count > 0)
+                {
+                    paramStr = "params";
+                    await sw.WriteAsync($"void* params[{resolvedParameters.Count}] = {{".Indent(indent + 2));
+                    for (int k = 0; k < resolvedParameters.Count; k++)
+                    {
+                        if (resolvedParameters[k].isValueType && !resolvedParameters[k].isOut)
+                            await sw.WriteAsync("&");
+
+                        await sw.WriteAsync(resolvedParameters[k].Name);
+                        if (k < resolvedParameters.Count - 1)
+                            await sw.WriteAsync(", ");
+                    }
+                    await sw.WriteLineAsync("};");
+                }
+                await sw.WriteLineAsync($"il2cpp::runtime_invoke({resolvedMethod.MI_Name}, obj, {paramStr});".Indent(indent + 2));
+                //await sw.WriteAsync($"obj->_ctor(".Indent(indent + 2));
+                //for (int k = 0; k < resolvedParameters.Count; k++)
+                //{
+                //    await sw.WriteAsync(resolvedParameters[k].Name);
+                //    if (k < resolvedParameters.Count - 1)
+                //        await sw.WriteAsync(", ");
+                //}
+                //await sw.WriteLineAsync(");");
+                await sw.WriteLineAsync("return obj;".Indent(indent + 2));
+                await sw.WriteLineAsync("}".Indent(indent));
+                await sw.WriteLineAsync();
+            }
+        }
+
+        public override string ToHeaderCode(Int32 indent = 0)
+        {
+            GenerateMINames();
+            StringBuilder stringBuilder = new StringBuilder();
+
+            if (!isNested)
+            {
+                stringBuilder.Append("#pragma once\n\n".Indent(indent));
+                // Namespace
+                if (Namespace != "")
+                {
+                    stringBuilder.Append($"namespace {CppNamespace()}\n".Indent(indent));
+                    stringBuilder.Append("{\n".Indent(indent));
+                    indent += 2;
+                }
             }
 
-            return code;
+            stringBuilder.Append($"// Class TypeDefinitionIndex: {typeDefinitionIndex}\n".Indent(indent));
+
+            //if (typeDef.genericContainerIndex >= 0)
+            //    code += $"{genericTemplate}\n".Indent(indent);
+            string NestedNameStr = DeclarationString();
+            //NestedNameStr = NestedNameStr.Substring(0, NestedNameStr.Length - 2);
+            stringBuilder.Append($"struct {NestedNameStr}".Indent(indent));
+            //code += $"struct {Name}".Indent(indent);
+            if (parentType != null)
+                stringBuilder.Append($" : {parentType.GetFullName()}");
+            else
+                stringBuilder.Append($" : Il2CppObject");
+            stringBuilder.Append("\n");
+            stringBuilder.Append("{\n".Indent(indent));
+
+            if (nestedTypes.Count > 0)
+            {
+                for (int i = 0; i < nestedTypes.Count; i++)
+                {
+                    stringBuilder.Append(nestedTypes[i].ForwardDeclaration(indent + 2));
+                    stringBuilder.Append("\n");
+                }
+            }
+
+            if (typeDef.genericContainerIndex == -1)
+            {
+
+                if (instanceFields.Count > 0)
+                {
+                    for (int i = 0; i < instanceFields.Count; i++)
+                    {
+                        stringBuilder.Append(instanceFields[i].ToCode(indent + 2));
+                    }
+                    stringBuilder.Append("\n");
+                }
+                if (instanceProperties.Count > 0)
+                {
+                    stringBuilder.Append("// Instance Properties\n".Indent(indent + 2));
+                    for (int i = 0; i < instanceProperties.Count; i++)
+                    {
+                        stringBuilder.Append(instanceProperties[i].ToHeaderCode(indent + 2));
+                    }
+                    stringBuilder.Append("\n");
+                }
+                if (staticProperties.Count > 0)
+                {
+                    stringBuilder.Append("// Static Properties\n".Indent(indent + 2));
+                    for (int i = 0; i < staticProperties.Count; i++)
+                    {
+                        stringBuilder.Append(staticProperties[i].ToHeaderCode(indent + 2));
+                    }
+                    stringBuilder.Append("\n");
+                }
+                if (instanceEvents.Count > 0)
+                {
+                    stringBuilder.Append("// Instance Events\n".Indent(indent + 2));
+                    for (int i = 0; i < instanceEvents.Count; i++)
+                    {
+                        stringBuilder.Append(instanceEvents[i].ToCode(indent + 2));
+                    }
+                    stringBuilder.Append("\n");
+                }
+                if (staticEvents.Count > 0)
+                {
+                    stringBuilder.Append("// Static Events\n".Indent(indent + 2));
+                    for (int i = 0; i < staticEvents.Count; i++)
+                    {
+                        stringBuilder.Append(staticEvents[i].ToCode(indent + 2));
+                    }
+                    stringBuilder.Append("\n");
+                }
+                if (instanceMethods.Count > 0)
+                {
+                    stringBuilder.Append("// Instance Methods\n".Indent(indent + 2));
+                    for (int i = 0; i < instanceMethods.Count; i++)
+                    {
+                        stringBuilder.Append(instanceMethods[i].ToHeaderCode(indent + 2));
+                    }
+                    stringBuilder.Append("\n");
+                }
+                if (staticMethods.Count > 0)
+                {
+                    stringBuilder.Append("// Static Methods\n".Indent(indent + 2));
+                    for (int i = 0; i < staticMethods.Count; i++)
+                    {
+                        stringBuilder.Append(staticMethods[i].ToHeaderCode(indent + 2));
+                    }
+                    stringBuilder.Append("\n");
+                }
+            }
+            // TODO: Fields, static fields, const fields, properties, methods, (generics), nested types
+
+
+            // il2cpp stuff
+            stringBuilder.Append("\n");
+            //stringBuilder.Append($"{Name}() {{}}\n".Indent(indent + 2));
+            //stringBuilder.Append("\n");
+            //stringBuilder.Append("\n");
+            stringBuilder.Append("// il2cpp stuff\n".Indent(indent + 2));
+            stringBuilder.Append("static ::Il2CppClass* il2cppClass;\n".Indent(indent + 2));
+            stringBuilder.Append("static System::Type* il2cppObjectType;\n".Indent(indent + 2));
+            stringBuilder.Append("// static fields\n".Indent(indent + 2));
+            for (int i = 0; i < staticFields.Count; i++)
+            {
+                stringBuilder.Append($"static ::FieldInfo* FI_{staticFields[i].Name.CSharpToCppIdentifier()};\n".Indent(indent + 2));
+            }
+            stringBuilder.Append("\n");
+            stringBuilder.Append("// methods\n".Indent(indent + 2));
+            for (int i = 0; i < miMethods.Count; i++)
+            {
+                stringBuilder.Append($"static ::MethodInfo* {miMethods[i].MI_Name};\n".Indent(indent + 2));
+            }
+            stringBuilder.Append("static void il2cpp_init();\n".Indent(indent + 2));
+
+            stringBuilder.Append("};\n".Indent(indent));
+
+            if (Name == "ParticleSystem")
+            {
+                int nBurst = -1;
+                int nMinMaxCurve = -1;
+                for (int i = 0; i < nestedTypes.Count; i++)
+                {
+                    if (nestedTypes[i].Name == "Burst")
+                        nBurst = i;
+                    else if (nestedTypes[i].Name == "MinMaxCurve")
+                        nMinMaxCurve = i;
+                }
+
+                if (nMinMaxCurve >= 0 && nBurst >= 0 && nMinMaxCurve > nBurst)
+                {
+                    ResolvedType resolvedType = nestedTypes[nMinMaxCurve];
+                    nestedTypes[nMinMaxCurve] = nestedTypes[nBurst];
+                    nestedTypes[nBurst] = resolvedType;
+                }
+            }
+
+            if (nestedTypes.Count > 0)
+            {
+                for (int i = 0; i < nestedTypes.Count; i++)
+                {
+                    stringBuilder.Append(nestedTypes[i].ToHeaderCode(indent));
+                    stringBuilder.Append("\n");
+                }
+            }
+
+            // Namespace
+            if (Namespace != "" && !isNested)
+            {
+                indent -= 2;
+                stringBuilder.Append("}\n".Indent(indent));
+            }
+
+            return stringBuilder.ToString();
         }
+
+        //public override string ToHeaderCode(Int32 indent = 0)
+        //{
+        //    GenerateMINames();
+        //    string code = "";
+
+        //    if (!isNested)
+        //    {
+        //        code += "#pragma once\n\n".Indent(indent);
+        //        // Namespace
+        //        if (Namespace != "")
+        //        {
+        //            code += $"namespace {CppNamespace()}\n".Indent(indent);
+        //            code += "{\n".Indent(indent);
+        //            indent += 2;
+        //        }
+        //    }
+
+        //    code += $"// Class TypeDefinitionIndex: {typeDefinitionIndex}\n".Indent(indent);
+
+        //    //if (typeDef.genericContainerIndex >= 0)
+        //    //    code += $"{genericTemplate}\n".Indent(indent);
+        //    string NestedNameStr = DeclarationString();
+        //    //NestedNameStr = NestedNameStr.Substring(0, NestedNameStr.Length - 2);
+        //    code += $"struct {NestedNameStr}".Indent(indent);
+        //    //code += $"struct {Name}".Indent(indent);
+        //    if (parentType != null)
+        //        code += $" : {parentType.GetFullName()}";
+        //    else
+        //        code += $" : Il2CppObject";
+        //    code += "\n";
+        //    code += "{\n".Indent(indent);
+
+        //    if (nestedTypes.Count > 0)
+        //    {
+        //        for (int i = 0; i < nestedTypes.Count; i++)
+        //        {
+        //            code += nestedTypes[i].ForwardDeclaration(indent + 2);
+        //            code += "\n";
+        //        }
+        //    }
+
+        //    if (typeDef.genericContainerIndex == -1)
+        //    {
+
+        //        if (instanceFields.Count > 0)
+        //        {
+        //            for (int i = 0; i < instanceFields.Count; i++)
+        //            {
+        //                code += instanceFields[i].ToCode(indent + 2);
+        //            }
+        //            code += "\n";
+        //        }
+        //        if (instanceProperties.Count > 0)
+        //        {
+        //            code += "// Instance Properties\n".Indent(indent + 2);
+        //            for (int i = 0; i < instanceProperties.Count; i++)
+        //            {
+        //                code += instanceProperties[i].ToCode(indent + 2);
+        //            }
+        //            code += "\n";
+        //        }
+        //        if (staticProperties.Count > 0)
+        //        {
+        //            code += "// Static Properties\n".Indent(indent + 2);
+        //            for (int i = 0; i < staticProperties.Count; i++)
+        //            {
+        //                code += staticProperties[i].ToCode(indent + 2);
+        //            }
+        //            code += "\n";
+        //        }
+        //        if (instanceEvents.Count > 0)
+        //        {
+        //            code += "// Instance Events\n".Indent(indent + 2);
+        //            for (int i = 0; i < instanceEvents.Count; i++)
+        //            {
+        //                code += instanceEvents[i].ToCode(indent + 2);
+        //            }
+        //            code += "\n";
+        //        }
+        //        if (staticEvents.Count > 0)
+        //        {
+        //            code += "// Static Events\n".Indent(indent + 2);
+        //            for (int i = 0; i < staticEvents.Count; i++)
+        //            {
+        //                code += staticEvents[i].ToCode(indent + 2);
+        //            }
+        //            code += "\n";
+        //        }
+        //        if (instanceMethods.Count > 0)
+        //        {
+        //            code += "// Instance Methods\n".Indent(indent + 2);
+        //            for (int i = 0; i < instanceMethods.Count; i++)
+        //            {
+        //                code += instanceMethods[i].ToHeaderCode(indent + 2);
+        //            }
+        //            code += "\n";
+        //        }
+        //        if (staticMethods.Count > 0)
+        //        {
+        //            code += "// Static Methods\n".Indent(indent + 2);
+        //            for (int i = 0; i < staticMethods.Count; i++)
+        //            {
+        //                code += staticMethods[i].ToHeaderCode(indent + 2);
+        //            }
+        //            code += "\n";
+        //        }
+        //    }
+        //    // TODO: Fields, static fields, const fields, properties, methods, (generics), nested types
+
+
+        //    // il2cpp stuff
+        //    code += "\n";
+        //    code += "// il2cpp stuff\n".Indent(indent + 2);
+        //    code += "static Il2CppClass* il2cppClass;\n".Indent(indent + 2);
+        //    code += "// methods\n".Indent(indent + 2);
+        //    for (int i = 0; i < miMethods.Count; i++)
+        //    {
+        //        code += $"static ::MethodInfo* {miMethods[i].MI_Name};\n".Indent(indent + 2);
+        //    }
+        //    code += "static void il2cpp_init();\n".Indent(indent + 2);
+
+        //    code += "};\n".Indent(indent);
+
+        //    if (nestedTypes.Count > 0)
+        //    {
+        //        for (int i = 0; i < nestedTypes.Count; i++)
+        //        {
+        //            code += nestedTypes[i].ToHeaderCode(indent);
+        //            code += "\n";
+        //        }
+        //    }
+
+        //    // Namespace
+        //    if (Namespace != "" && !isNested)
+        //    {
+        //        indent -= 2;
+        //        code += "}\n".Indent(indent);
+        //    }
+
+        //    return code;
+        //}
 
         private void MakeGenericTemplate()
         {
@@ -310,19 +763,19 @@ namespace il2cpp_sdk_generator
                 bool hasCoroutineProperty = false;
                 bool hasMoveNextMethod = false;
 
-                if(instanceProperties.Count != 2)
+                if (instanceProperties.Count != 2)
                     goto CLASS;
 
                 for (int i = 0; i < instanceProperties.Count; i++)
                 {
-                    if(instanceProperties[i].Name == "System.Collections.IEnumerator.Current")
+                    if (instanceProperties[i].Name == "System.Collections.IEnumerator.Current")
                     {
                         hasCoroutineProperty = true;
                         break;
                     }
                 }
 
-                if(!hasCoroutineProperty)
+                if (!hasCoroutineProperty)
                     goto CLASS;
 
                 for (int i = 0; i < instanceMethods.Count; i++)
@@ -347,7 +800,7 @@ namespace il2cpp_sdk_generator
         public void GenerateMINames()
         {
             Dictionary<string, List<ResolvedMethod>> mapMIMethods = new Dictionary<string, List<ResolvedMethod>>();
-            for(int i =0;i<miMethods.Count;i++)
+            for (int i = 0; i < miMethods.Count; i++)
             {
                 if (!mapMIMethods.TryGetValue(miMethods[i].Name, out var methodList))
                 {
@@ -358,20 +811,20 @@ namespace il2cpp_sdk_generator
                 methodList.Add(miMethods[i]);
             }
 
-            foreach(var pair in mapMIMethods)
+            foreach (var pair in mapMIMethods)
             {
                 List<ResolvedMethod> methods = pair.Value;
-                string prefix = pair.Key;
+                //string prefix = pair.Key;
 
-                if(methods.Count == 1)
+                if (methods.Count == 1)
                 {
-                    methods[0].MI_Name = $"MI_{methods[0].Name}";
+                    methods[0].MI_Name = $"MI_{methods[0].Name.CSharpToCppIdentifier()}";
                     continue;
                 }
 
-                for(int i =0;i<methods.Count;i++)
+                for (int i = 0; i < methods.Count; i++)
                 {
-                    methods[i].MI_Name = $"MI_{methods[i].Name}_{i+1}";
+                    methods[i].MI_Name = $"MI_{methods[i].Name.CSharpToCppIdentifier()}_{i + 1}";
                 }
             }
         }
@@ -384,10 +837,10 @@ namespace il2cpp_sdk_generator
                 // equal.
                 if (m2 == null)
                     return 0;
-                
+
                 // If m1 is null and y is not null, y
                 // is greater.
-                return -1;    
+                return -1;
             }
 
             // If m1 is not null and m2 is null, m1 is greater.
@@ -403,17 +856,22 @@ namespace il2cpp_sdk_generator
             //    return 1;
             //else if (!m1.Name.StartsWith("um") && m2.Name.StartsWith("um"))
             //    return -1;
-            
+
             // Sort strings with ordinary string comparison.
             return m1.Name.CompareTo(m2.Name);
         }
 
-        public override void Demangle()
+        public override void Demangle(bool force = false)
         {
             if (isDemangled)
                 return;
 
-            base.Demangle();
+            if (Name == "Player")
+            {
+                //System.Threading.ThreadPool
+            }
+
+            base.Demangle(force);
 
             Dictionary<string, Int32> demangledPrefixes = new Dictionary<string, Int32>();
             if (parentType != null)
@@ -438,16 +896,20 @@ namespace il2cpp_sdk_generator
             for (int i = 0; i < instanceFields.Count; i++)
             {
                 ResolvedField resolvedField = instanceFields[i];
-                if (resolvedField.Name.isCSharpIdentifier())
+                if (!resolvedField.isMangled)
+                    continue;
+
+                if (!force && resolvedField.Name.isCSharpIdentifier())
                 {
                     if (resolvedField.Name.isCppIdentifier())
                         continue;
 
+                    // @TODO: remove backingfield
                     resolvedField.Name = resolvedField.Name.Replace('<', '_').Replace('>', '_').Replace('.', '_');
                     continue;
                 }
 
-                string demangledPrefix = instanceFields[i].DemangledPrefix();
+                string demangledPrefix = resolvedField.DemangledPrefix();
                 if (!demangledPrefix.EndsWith("_"))
                     demangledPrefix += "_";
                 if (!demangledPrefixes.TryGetValue(demangledPrefix, out var idx))
@@ -460,12 +922,42 @@ namespace il2cpp_sdk_generator
                 demangledPrefixes[demangledPrefix] = idx;
                 //code += instanceFields[i].ToCode(indent + 2);
             }
-            
+            for (int i = 0; i < staticFields.Count; i++)
+            {
+                ResolvedField resolvedField = staticFields[i];
+                if (!resolvedField.isMangled)
+                    continue;
+                if (!force && resolvedField.Name.isCSharpIdentifier())
+                {
+                    if (resolvedField.Name.isCppIdentifier())
+                        continue;
+
+                    resolvedField.Name = resolvedField.Name.Replace('<', '_').Replace('>', '_').Replace('.', '_');
+                    continue;
+                }
+
+                string demangledPrefix = resolvedField.DemangledPrefix();
+                if (!demangledPrefix.EndsWith("_"))
+                    demangledPrefix += "_";
+                if (!demangledPrefixes.TryGetValue(demangledPrefix, out var idx))
+                {
+                    idx = 0;
+                    demangledPrefixes.Add(demangledPrefix, idx);
+                }
+                idx++;
+                resolvedField.Name = $"{demangledPrefix}{idx}";
+                demangledPrefixes[demangledPrefix] = idx;
+                //code += instanceFields[i].ToCode(indent + 2);
+            }
+
+
             // Demangle properties
-            for (int i =0;i<instanceProperties.Count;i++)
+            for (int i = 0; i < instanceProperties.Count; i++)
             {
                 ResolvedProperty resolvedProperty = instanceProperties[i];
-                if (resolvedProperty.Name.isCSharpIdentifier())
+                if (!resolvedProperty.isMangled)
+                    continue;
+                if (!force && resolvedProperty.Name.isCSharpIdentifier())
                 {
                     if (resolvedProperty.Name.isCppIdentifier())
                         continue;
@@ -492,7 +984,9 @@ namespace il2cpp_sdk_generator
             for (int i = 0; i < staticProperties.Count; i++)
             {
                 ResolvedProperty resolvedProperty = staticProperties[i];
-                if (resolvedProperty.Name.isCSharpIdentifier())
+                if (!resolvedProperty.isMangled)
+                    continue;
+                if (!force && resolvedProperty.Name.isCSharpIdentifier())
                 {
                     if (resolvedProperty.Name.isCppIdentifier())
                         continue;
@@ -519,7 +1013,9 @@ namespace il2cpp_sdk_generator
             for (int i = 0; i < instanceEvents.Count; i++)
             {
                 ResolvedEvent resolvedEvent = instanceEvents[i];
-                if (resolvedEvent.Name.isCSharpIdentifier())
+                if (!resolvedEvent.isMangled)
+                    continue;
+                if (!force && resolvedEvent.Name.isCSharpIdentifier())
                 {
                     if (resolvedEvent.Name.isCppIdentifier())
                         continue;
@@ -544,7 +1040,9 @@ namespace il2cpp_sdk_generator
             for (int i = 0; i < staticEvents.Count; i++)
             {
                 ResolvedEvent resolvedEvent = staticEvents[i];
-                if (resolvedEvent.Name.isCSharpIdentifier())
+                if (!resolvedEvent.isMangled)
+                    continue;
+                if (!force && resolvedEvent.Name.isCSharpIdentifier())
                 {
                     if (resolvedEvent.Name.isCppIdentifier())
                         continue;
@@ -568,15 +1066,17 @@ namespace il2cpp_sdk_generator
             }
 
             // Demangle Methods
-            for (int i = 0;i<instanceMethods.Count;i++)
+            for (int i = 0; i < instanceMethods.Count; i++)
             {
                 ResolvedMethod resolvedMethod = instanceMethods[i];
                 resolvedMethod.DemangleParams();
-                if (resolvedMethod.Name.isCSharpIdentifier())
+                if (!resolvedMethod.isMangled)
+                    continue;
+                if (!force && resolvedMethod.Name.isCSharpIdentifier())
                 {
                     if (resolvedMethod.Name.isCppIdentifier())
                         continue;
-                    
+
                     resolvedMethod.Name = resolvedMethod.Name.Replace('<', '_').Replace('>', '_').Replace('.', '_');
                     continue;
                 }
@@ -598,7 +1098,9 @@ namespace il2cpp_sdk_generator
             {
                 ResolvedMethod resolvedMethod = staticMethods[i];
                 resolvedMethod.DemangleParams();
-                if (resolvedMethod.Name.isCSharpIdentifier())
+                if (!resolvedMethod.isMangled)
+                    continue;
+                if (!force && resolvedMethod.Name.isCSharpIdentifier())
                 {
                     if (resolvedMethod.Name.isCppIdentifier())
                         continue;
@@ -634,67 +1136,338 @@ namespace il2cpp_sdk_generator
             // remove from queue
             Demangler.demangleQueue.Remove(this);
 
-            for (int i =0;i< demangleQueue.Count;i++)
+            for (int i = 0; i < demangleQueue.Count; i++)
             {
-                demangleQueue[i].Demangle();
+                demangleQueue[i].Demangle(force);
             }
         }
 
-        public override string ToCppCode(Int32 indent = 0)
+        public override async Task ToCppCode(StreamWriter sw, Int32 indent = 0)
         {
-            string code = "";
             if (!isNested)
             {
-                code = code.Indent(indent);
-                code += "#include \"stdafx.h\"\n\n";
+                await sw.WriteAsync("#include \"pch.h\"\n\n");
+                //code = code.Indent(indent);
+                //code += "#include \"pch.h\"\n\n";
+
                 // Namespace
                 if (Namespace != "")
                 {
-                    code += $"namespace {CppNamespace()}\n".Indent(indent);
-                    code += "{\n".Indent(indent);
+                    await sw.WriteAsync($"namespace {CppNamespace()}\n".Indent(indent));
+                    //code += $"namespace {CppNamespace()}\n".Indent(indent);
+                    await sw.WriteAsync("{\n".Indent(indent));
+                    //code += "{\n".Indent(indent);
                     indent += 2;
                 }
             }
             // TODO: Init any static fields
             string NestedNameStr = NestedName();
-            code += $"Il2CppClass* {NestedNameStr}il2cppClass = nullptr;\n".Indent(indent);
-            for(int i =0;i<miMethods.Count; i++)
+            await sw.WriteAsync($"Il2CppClass* {NestedNameStr}il2cppClass = nullptr;\n".Indent(indent));
+            await sw.WriteAsync($"System::Type* {NestedNameStr}il2cppObjectType = nullptr;\n".Indent(indent));
+            //code += $"Il2CppClass* {NestedNameStr}il2cppClass = nullptr;\n".Indent(indent);
+            for (int i = 0; i < miMethods.Count; i++)
             {
-                code += $"MethodInfo* {NestedNameStr}{miMethods[i].MI_Name} = nullptr;\n".Indent(indent);
-            }
-            // methods
-            for (int i=0;i<instanceMethods.Count;i++)
-            {
-                code += instanceMethods[i].ToCppCode(indent);
+                await sw.WriteAsync($"::MethodInfo* {NestedNameStr}{miMethods[i].MI_Name} = nullptr;\n".Indent(indent));
             }
 
+            await sw.WriteAsync("// static fields\n".Indent(indent));
+            for (int i = 0; i < staticFields.Count; i++)
+            {
+                await sw.WriteAsync($"::FieldInfo* {NestedNameStr}FI_{staticFields[i].Name.CSharpToCppIdentifier()} = nullptr;\n".Indent(indent));
+            }
+
+            if (typeDef.genericContainerIndex == -1)
+            {
+                for (int i = 0; i < instanceProperties.Count; i++)
+                {
+                    await instanceProperties[i].ToCppCode(sw, indent);
+                }
+
+                for (int i = 0; i < staticProperties.Count; i++)
+                {
+                    await staticProperties[i].ToCppCode(sw, indent);
+                }
+                //code += "\n";
+
+                // methods
+                for (int i = 0; i < instanceMethods.Count; i++)
+                {
+                    await instanceMethods[i].ToCppCode(sw, indent);
+                }
+
+                // methods
+                for (int i = 0; i < staticMethods.Count; i++)
+                {
+                    await staticMethods[i].ToCppCode(sw, indent);
+                }
+
+                for (int i = 0; i < instanceEvents.Count; i++)
+                {
+                    await instanceEvents[i].ToCppCode(sw, indent);
+                }
+            }
             // TODO: nested types
             for (int i = 0; i < nestedTypes.Count; i++)
             {
-                code += nestedTypes[i].ToCppCode(indent + 2);
-                code += "\n";
+                if (nestedTypes[i].GetType() == typeof(ResolvedInterface))
+                {
+                    continue;
+                }
+
+                await nestedTypes[i].ToCppCode(sw, indent + 2);
+                await sw.WriteAsync("\n");
             }
 
             // il2cpp_init
-            code += $"void {NestedNameStr}il2cpp_init()\n".Indent(indent);
-            code += "{\n".Indent(indent);
+            await sw.WriteAsync($"void {NestedNameStr}il2cpp_init()\n".Indent(indent));
+            await sw.WriteAsync("{\n".Indent(indent));
             // TODO: grab right type from typedef
-            code += $"il2cppClass = il2cpp::class_from_il2cpp_type(il2cpp::m_pMetadataRegistration->types[{typeDef.byvalTypeIndex}]);\n".Indent(indent+2);
-            code += "il2cpp::runtime_class_init(il2cppClass);\n".Indent(indent + 2);
-            // Methods
-            for(int i =0;i<miMethods.Count;i++)
+            await sw.WriteAsync($"il2cppClass = il2cpp::class_from_il2cpp_type(il2cpp::m_pMetadataRegistration->types[{typeDef.byvalTypeIndex}]);\n".Indent(indent + 2));
+            await sw.WriteAsync("il2cpp::runtime_class_init(il2cppClass);\n".Indent(indent + 2));
+            await sw.WriteAsync("void* iter = nullptr;\n".Indent(indent + 2));
+            await sw.WriteAsync("il2cpp::class_get_methods(il2cppClass, &iter);\n".Indent(indent + 2));
+            await sw.WriteAsync("iter = nullptr;\n".Indent(indent + 2));
+            await sw.WriteAsync("il2cpp::class_get_fields(il2cppClass, &iter);\n".Indent(indent + 2));
+            // Static Fields
+            for (int i = 0; i < staticFields.Count; i++)
             {
-                code += $"{miMethods[i].MI_Name} = (MethodInfo*)il2cppClass->methods[{miMethods[i].methodIndex - typeDef.methodStart}];\n".Indent(indent + 2);
+                await sw.WriteAsync($"FI_{staticFields[i].Name.CSharpToCppIdentifier()} = (::FieldInfo*)il2cppClass->fields + {staticFields[i].fieldIndex};\n".Indent(indent + 2));
             }
-            code += "}\n".Indent(indent);
+            // Methods
+            for (int i = 0; i < miMethods.Count; i++)
+            {
+                await sw.WriteAsync($"{miMethods[i].MI_Name} = (::MethodInfo*)il2cppClass->methods[{miMethods[i].methodIndex - typeDef.methodStart}];\n".Indent(indent + 2));
+            }
+            await sw.WriteAsync("il2cppObjectType = (System::Type*)malloc(sizeof(Il2CppReflectionType));\n".Indent(indent + 2));
+            await sw.WriteAsync("memcpy(il2cppObjectType, il2cpp::class_get_object(il2cppClass), sizeof(Il2CppReflectionType));\n".Indent(indent + 2));
+
+            await sw.WriteAsync("}\n".Indent(indent));
+
             // end of Namespace
             if (Namespace != "" && !isNested)
             {
                 indent -= 2;
-                code += "}\n".Indent(indent);
+                await sw.WriteAsync("}\n".Indent(indent));
+            }
+        }
+
+        public override string ToCppCode(Int32 indent = 0)
+        {
+            StringBuilder stringBuilder = new StringBuilder();
+
+            if (!isNested)
+            {
+                stringBuilder.Append("#include \"pch.h\"\n\n");
+                //code = code.Indent(indent);
+                //code += "#include \"pch.h\"\n\n";
+
+                // Namespace
+                if (Namespace != "")
+                {
+                    stringBuilder.Append($"namespace {CppNamespace()}\n".Indent(indent));
+                    //code += $"namespace {CppNamespace()}\n".Indent(indent);
+                    stringBuilder.Append("{\n".Indent(indent));
+                    //code += "{\n".Indent(indent);
+                    indent += 2;
+                }
+            }
+            // TODO: Init any static fields
+            string NestedNameStr = NestedName();
+            stringBuilder.Append($"Il2CppClass* {NestedNameStr}il2cppClass = nullptr;\n".Indent(indent));
+            stringBuilder.Append($"System::Type* {NestedNameStr}il2cppObjectType = nullptr;\n".Indent(indent));
+            //code += $"Il2CppClass* {NestedNameStr}il2cppClass = nullptr;\n".Indent(indent);
+            for (int i = 0; i < miMethods.Count; i++)
+            {
+                stringBuilder.Append($"::MethodInfo* {NestedNameStr}{miMethods[i].MI_Name} = nullptr;\n".Indent(indent));
             }
 
-            return code;
+            stringBuilder.Append("// static fields\n".Indent(indent));
+            for (int i = 0; i < staticFields.Count; i++)
+            {
+                stringBuilder.Append($"::FieldInfo* {NestedNameStr}FI_{staticFields[i].Name.CSharpToCppIdentifier()} = nullptr;\n".Indent(indent));
+            }
+
+            if (typeDef.genericContainerIndex == -1)
+            {
+                for (int i = 0; i < instanceProperties.Count; i++)
+                {
+                    stringBuilder.Append(instanceProperties[i].ToCppCode(indent));
+                }
+
+                for (int i = 0; i < staticProperties.Count; i++)
+                {
+                    stringBuilder.Append(staticProperties[i].ToCppCode(indent));
+                }
+                //code += "\n";
+
+                // methods
+                for (int i = 0; i < instanceMethods.Count; i++)
+                {
+                    stringBuilder.Append(instanceMethods[i].ToCppCode(indent));
+                }
+
+                // methods
+                for (int i = 0; i < staticMethods.Count; i++)
+                {
+                    stringBuilder.Append(staticMethods[i].ToCppCode(indent));
+                }
+
+                for (int i = 0; i < instanceEvents.Count; i++)
+                {
+                    stringBuilder.Append(instanceEvents[i].ToCppCode(indent));
+                }
+            }
+            // TODO: nested types
+            for (int i = 0; i < nestedTypes.Count; i++)
+            {
+                stringBuilder.Append(nestedTypes[i].ToCppCode(indent + 2));
+                stringBuilder.Append("\n");
+            }
+
+            // il2cpp_init
+            stringBuilder.Append($"void {NestedNameStr}il2cpp_init()\n".Indent(indent));
+            stringBuilder.Append("{\n".Indent(indent));
+            // TODO: grab right type from typedef
+            stringBuilder.Append($"il2cppClass = il2cpp::class_from_il2cpp_type(il2cpp::m_pMetadataRegistration->types[{typeDef.byvalTypeIndex}]);\n".Indent(indent + 2));
+            stringBuilder.Append("il2cpp::runtime_class_init(il2cppClass);\n".Indent(indent + 2));
+            stringBuilder.Append("void* iter = nullptr;\n".Indent(indent + 2));
+            stringBuilder.Append("il2cpp::class_get_methods(il2cppClass, &iter);\n".Indent(indent + 2));
+            stringBuilder.Append("iter = nullptr;\n".Indent(indent + 2));
+            stringBuilder.Append("il2cpp::class_get_fields(il2cppClass, &iter);\n".Indent(indent + 2));
+            // Static Fields
+            for (int i = 0; i < staticFields.Count; i++)
+            {
+                stringBuilder.Append($"FI_{staticFields[i].Name.CSharpToCppIdentifier()} = (::FieldInfo*)il2cppClass->fields + {staticFields[i].fieldIndex};\n".Indent(indent + 2));
+            }
+            // Methods
+            for (int i = 0; i < miMethods.Count; i++)
+            {
+                stringBuilder.Append($"{miMethods[i].MI_Name} = (::MethodInfo*)il2cppClass->methods[{miMethods[i].methodIndex - typeDef.methodStart}];\n".Indent(indent + 2));
+            }
+            stringBuilder.Append("il2cppObjectType = (System::Type*)malloc(sizeof(Il2CppReflectionType));\n".Indent(indent + 2));
+            stringBuilder.Append("memcpy(il2cppObjectType, il2cpp::class_get_object(il2cppClass), sizeof(Il2CppReflectionType));\n".Indent(indent + 2));
+
+            stringBuilder.Append("}\n".Indent(indent));
+
+            // end of Namespace
+            if (Namespace != "" && !isNested)
+            {
+                indent -= 2;
+                stringBuilder.Append("}\n".Indent(indent));
+            }
+
+            return stringBuilder.ToString();
+        }
+        //public override string ToCppCode(Int32 indent = 0)
+        //{
+        //    string code = "";
+        //    if (!isNested)
+        //    {
+        //        code = code.Indent(indent);
+        //        code += "#include \"pch.h\"\n\n";
+        //        // Namespace
+        //        if (Namespace != "")
+        //        {
+        //            code += $"namespace {CppNamespace()}\n".Indent(indent);
+        //            code += "{\n".Indent(indent);
+        //            indent += 2;
+        //        }
+        //    }
+        //    // TODO: Init any static fields
+        //    string NestedNameStr = NestedName();
+        //    code += $"Il2CppClass* {NestedNameStr}il2cppClass = nullptr;\n".Indent(indent);
+        //    for (int i = 0; i < miMethods.Count; i++)
+        //    {
+        //        code += $"::MethodInfo* {NestedNameStr}{miMethods[i].MI_Name} = nullptr;\n".Indent(indent);
+        //    }
+
+        //    if (typeDef.genericContainerIndex == -1)
+        //    {
+        //        // methods
+        //        for (int i = 0; i < instanceMethods.Count; i++)
+        //        {
+        //            code += instanceMethods[i].ToCppCode(indent);
+        //        }
+        //    }
+        //    // TODO: nested types
+        //    for (int i = 0; i < nestedTypes.Count; i++)
+        //    {
+        //        code += nestedTypes[i].ToCppCode(indent + 2);
+        //        code += "\n";
+        //    }
+
+        //    // il2cpp_init
+        //    code += $"void {NestedNameStr}il2cpp_init()\n".Indent(indent);
+        //    code += "{\n".Indent(indent);
+        //    // TODO: grab right type from typedef
+        //    code += $"il2cppClass = il2cpp::class_from_il2cpp_type(il2cpp::m_pMetadataRegistration->types[{typeDef.byvalTypeIndex}]);\n".Indent(indent + 2);
+        //    code += "il2cpp::runtime_class_init(il2cppClass);\n".Indent(indent + 2);
+        //    // Methods
+        //    for (int i = 0; i < miMethods.Count; i++)
+        //    {
+        //        code += $"{miMethods[i].MI_Name} = (::MethodInfo*)il2cppClass->methods[{miMethods[i].methodIndex - typeDef.methodStart}];\n".Indent(indent + 2);
+        //    }
+        //    code += "}\n".Indent(indent);
+        //    // end of Namespace
+        //    if (Namespace != "" && !isNested)
+        //    {
+        //        indent -= 2;
+        //        code += "}\n".Indent(indent);
+        //    }
+
+        //    return code;
+        //}
+
+        internal override void ResolveOverrides()
+        {
+            for (int i = 0; i < miMethods.Count; i++)
+            {
+                if (!miMethods[i].isOverride)
+                    continue;
+
+                miMethods[i].ResolveOverride();
+            }
+        }
+
+        public override string ForwardDeclaration(Int32 indent = 0)
+        {
+            return $"struct {Name};\n".Indent(indent);
+        }
+
+        public override string ReturnTypeString(bool nestedCall = false)
+        {
+            //if (isMangled)
+            //    return "void";
+
+            return base.ReturnTypeString(nestedCall);
+        }
+
+        public override string GetFullName()
+        {
+            //if (isMangled)
+            //    return "void";
+
+            return base.GetFullName();
+        }
+
+        async Task GameObjectExtensions(StreamWriter sw, Int32 indent)
+        {
+            await sw.WriteLineAsync("template <typename T>".Indent(indent));
+            await sw.WriteLineAsync("T* AddComponent()".Indent(indent));
+            await sw.WriteLineAsync("{".Indent(indent));
+            indent += 2;
+            await sw.WriteLineAsync("return (T*)this->AddComponent(T::il2cppObjectType);".Indent(indent));
+            indent -= 2;
+            await sw.WriteLineAsync("}".Indent(indent));
+
+            await sw.WriteLineAsync();
+            await sw.WriteLineAsync("template <typename T>".Indent(indent));
+            await sw.WriteLineAsync("T* GetComponent()".Indent(indent));
+            await sw.WriteLineAsync("{".Indent(indent));
+            indent += 2;
+            await sw.WriteLineAsync("return (T*)this->GetComponent(T::il2cppObjectType);".Indent(indent));
+            indent -= 2;
+            await sw.WriteLineAsync("}".Indent(indent));
         }
     }
 }
