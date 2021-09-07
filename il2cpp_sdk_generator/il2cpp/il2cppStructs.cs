@@ -147,12 +147,13 @@ namespace il2cpp_sdk_generator
 
     public class Il2CppCodeRegistration64
     {
-        public long methodPointersCount;
-        public ulong methodPointers; // Il2CppMethodPointer
+        //public long methodPointersCount;
+        //public ulong methodPointers; // Il2CppMethodPointer
         public long reversePInvokeWrapperCount;
         public ulong reversePInvokeWrappers; // Il2CppMethodPointer
         public long genericMethodPointersCount;
         public ulong genericMethodPointers; // Il2CppMethodPointer
+        public ulong genericAdjustorThunks;
         public long invokerPointersCount;
         public ulong invokerPointers; // InvokerMethod
         public long customAttributeCount;
@@ -163,12 +164,14 @@ namespace il2cpp_sdk_generator
         public ulong interopData; // Il2CppInteropData
         public long windowsRuntimeFactoryCount;
         public ulong windowsRuntimeFactoryTable; // Il2CppWindowsRuntimeFactoryTableEntry
+        public ulong codeGenModulesCount;
+        public ulong pCodeGenModules;
 
         // use indexedMethods from metadata to validate?
         public bool Validate()
         {
             // These should never be below 0
-            if (methodPointersCount < 0 ||
+            if (//methodPointersCount < 0 ||
                reversePInvokeWrapperCount < 0 ||
                genericMethodPointersCount < 0 ||
                invokerPointersCount < 0 ||
@@ -178,16 +181,16 @@ namespace il2cpp_sdk_generator
                windowsRuntimeFactoryCount < 0)
                 return false;
 
-            if (methodPointersCount == 0)
-            {
-                if (methodPointers != 0)
-                    return false;
-            }
-            else if (methodPointersCount > 0)
-            {
-                if (methodPointers <= PortableExecutable.imageOptionalHeader64.ImageBase)
-                    return false;
-            }
+            //if (methodPointersCount == 0)
+            //{
+            //    if (methodPointers != 0)
+            //        return false;
+            //}
+            //else if (methodPointersCount > 0)
+            //{
+            //    if (methodPointers <= PortableExecutable.imageOptionalHeader64.ImageBase)
+            //        return false;
+            //}
 
             if (reversePInvokeWrapperCount == 0)
             {
@@ -277,8 +280,44 @@ namespace il2cpp_sdk_generator
                     return false;
             }
 
+            if (codeGenModulesCount == 0)
+            {
+                if (pCodeGenModules != 0)
+                    return false;
+            }
+            else if (codeGenModulesCount > 0)
+            {
+                if (pCodeGenModules <= PortableExecutable.imageOptionalHeader64.ImageBase)
+                    return false;
+            }
+
             return true;
         }
+    }
+
+    // Introduced in metadata v24.2 (replaces method pointers in Il2CppCodeRegistration)
+    public class Il2CppCodeGenModule
+    {
+        public ulong moduleName;
+        public ulong methodPointerCount;
+        public ulong methodPointers;
+        public long adjustorThunkCount;
+        public ulong adjustorThunks; //Pointer
+        public ulong invokerIndices;
+        public ulong reversePInvokeWrapperCount;
+        public ulong reversePInvokeWrapperIndices;
+        public ulong rgctxRangesCount;
+        public ulong rgctxRanges;
+        public ulong rgctxsCount;
+        public ulong rgctxs;
+        public ulong debuggerMetadata;
+
+        // Added in metadata v27
+        public ulong customAttributeCacheGenerator; // CustomAttributesCacheGenerator*
+        public ulong moduleInitializer; // Il2CppMethodPointer
+        public ulong staticConstructorTypeIndices; // TypeDefinitionIndex*
+        public ulong metadataRegistration; // Il2CppMetadataRegistration* // Per-assembly mode only
+        public ulong codeRegistration; // Il2CppCodeRegistration* // Per-assembly mode only
     }
 
     public class Il2CppInteropData
@@ -336,6 +375,7 @@ namespace il2cpp_sdk_generator
     {
         public MethodIndex methodIndex;
         public MethodIndex invokerIndex;
+        public int adjustorThunk;
     }
 
     [StructLayout(LayoutKind.Explicit)]
@@ -382,7 +422,7 @@ namespace il2cpp_sdk_generator
         public ulong generic_classPtr; // Il2CppGenericClass*
     }
 
-    
+
     public class Il2CppType
     {
         public data data;

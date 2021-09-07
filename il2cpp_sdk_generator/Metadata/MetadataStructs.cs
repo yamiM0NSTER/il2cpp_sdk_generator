@@ -85,8 +85,8 @@ namespace il2cpp_sdk_generator
         public int32_t interfaceOffsetsCount;
         public int32_t typeDefinitionsOffset; // Il2CppTypeDefinition
         public int32_t typeDefinitionsCount;
-        public int32_t rgctxEntriesOffset; // Il2CppRGCTXDefinition
-        public int32_t rgctxEntriesCount;
+        //public int32_t rgctxEntriesOffset; // Il2CppRGCTXDefinition
+        //public int32_t rgctxEntriesCount;
         public int32_t imagesOffset; // Il2CppImageDefinition
         public int32_t imagesCount;
         public int32_t assembliesOffset; // Il2CppAssemblyDefinition
@@ -142,8 +142,8 @@ namespace il2cpp_sdk_generator
         public TypeIndex parentIndex;
         public TypeIndex elementTypeIndex; // we can probably remove this one. Only used for enums
 
-        public RGCTXIndex rgctxStartIndex;
-        public int32_t rgctxCount;
+        //public RGCTXIndex rgctxStartIndex;
+        //public int32_t rgctxCount;
 
         public GenericContainerIndex genericContainerIndex;
 
@@ -166,7 +166,7 @@ namespace il2cpp_sdk_generator
         public uint16_t vtable_count;
         public uint16_t interfaces_count;
         public uint16_t interface_offsets_count;
-        
+
         // bitfield to portably encode boolean values as single bits
         // 01 - valuetype;
         // 02 - enumtype;
@@ -202,11 +202,11 @@ namespace il2cpp_sdk_generator
         public TypeIndex returnType;
         public ParameterIndex parameterStart;
         public GenericContainerIndex genericContainerIndex;
-        public MethodIndex methodIndex;
-        public MethodIndex invokerIndex;
-        public MethodIndex reversePInvokeWrapperIndex;
-        public RGCTXIndex rgctxStartIndex;
-        public int32_t rgctxCount;
+        //public MethodIndex methodIndex;
+        //public MethodIndex invokerIndex;
+        //public MethodIndex reversePInvokeWrapperIndex;
+        //public RGCTXIndex rgctxStartIndex;
+        //public int32_t rgctxCount;
         public uint32_t token;
         public uint16_t flags;
         public uint16_t iflags;
@@ -411,7 +411,7 @@ namespace il2cpp_sdk_generator
         public int32_t referencedAssemblyCount;
         public Il2CppAssemblyNameDefinition aname;
     }
-    
+
     static class Metadata_Constants
     {
         public const int32_t PUBLIC_KEY_BYTE_LENGTH = 8;

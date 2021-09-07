@@ -80,6 +80,7 @@
     <Compile Include="ResolvedObjects\ResolvedImage.cs" />
     <Compile Include="ResolvedObjects\ResolvedInterface.cs" />
     <Compile Include="ResolvedObjects\ResolvedMethod.cs" />
+    <Compile Include="ResolvedObjects\ResolvedModule.cs" />
     <Compile Include="ResolvedObjects\ResolvedNamespace.cs" />
     <Compile Include="ResolvedObjects\ResolvedObject.cs" />
     <Compile Include="ResolvedObjects\ResolvedParameter.cs" />

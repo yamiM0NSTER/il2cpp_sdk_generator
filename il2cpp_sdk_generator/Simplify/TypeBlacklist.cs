@@ -199,7 +199,10 @@ namespace il2cpp_sdk_generator
             "Cysharp::Threading::Tasks::UniTask_1::Awaiter",
             "Cysharp::Threading::Tasks::UniTask::Awaiter",
             "Cysharp::Threading::Tasks::YieldAwaitable::Awaiter",
-            "Cysharp::Threading::Tasks::UnityAsyncExtensions::ResourceRequestAwaiter"
+            "Cysharp::Threading::Tasks::UnityAsyncExtensions::ResourceRequestAwaiter",
+            "System::Collections::Immutable::ImmutableHashSet_1",
+            "UnityEngine::LowLevel::PlayerLoopSystem",
+            "TMPro::TMP_Text"
         };
 
         public static bool isBlacklisted(string type, bool isMangled)

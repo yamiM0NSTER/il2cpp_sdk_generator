@@ -19,7 +19,45 @@ namespace il2cpp_sdk_generator
         public List<ResolvedMethod> refMethods = new List<ResolvedMethod>();
         public bool isReferenced { get; set; }
         public ResolvedMethod overridenMethod = null;
-        public ulong methodPtr = 0;
+        private ulong _methodPtr = UInt64.MaxValue;
+        public ulong methodPtr
+        {
+            get
+            {
+                if (_methodPtr != UInt64.MaxValue)
+                    return _methodPtr;
+
+                if (methodIndex < 0)
+                    return 0;
+
+                var method = (methodDef.token & 0xffffff);
+                if (method == 0)
+                    return 0;
+
+                // In the event of an exception, the method pointer is not set in the file
+                // This probably means it has been optimized away by the compiler, or is an unused generic method
+                try
+                {
+                    // Remove ARM Thumb marker LSB if necessary
+                    //start = Binary.ModuleMethodPointers[module][method - 1];
+                    _methodPtr = this.declaringType.resolvedImage.resolvedModule.methodPointers[method - 1];
+
+                    if (_methodPtr != 0)
+                    {
+                        var section = Section.ByRVA(RVA.FromVA(_methodPtr));
+                        if (!section.ReadableName.Contains("il2cpp"))
+                        {
+
+                        }
+                    }
+                }
+                catch (IndexOutOfRangeException)
+                {
+                    _methodPtr = 0;
+                }
+                return _methodPtr;
+            }
+        }
         public bool isCtor = false;
 
         public ResolvedMethod(Il2CppMethodDefinition methodDefinition, Int32 methodIdx, ResolvedType declType)
@@ -56,6 +94,8 @@ namespace il2cpp_sdk_generator
             {
                 await sw.WriteAsync($"// RVA: 0x{RVA.FromVA(methodPtr):X} VA: 0x{methodPtr:X16}\n");
                 await sw.WriteAsync("".Indent(indent));
+
+                //var stringliterals = CodeScanner.
             }
 
             if (isStatic)
@@ -105,7 +145,7 @@ namespace il2cpp_sdk_generator
                 code += "".Indent(indent);
             }
 
-            if(methodPtr != 0)
+            if (methodPtr != 0)
             {
                 code += $"// RVA: 0x{RVA.FromVA(methodPtr):X} VA: 0x{methodPtr:X16}\n";
                 code += "".Indent(indent);
@@ -114,7 +154,7 @@ namespace il2cpp_sdk_generator
             if (isStatic)
                 code += "static ";
 
-            if(isVirtual)
+            if (isVirtual)
                 code += "/*virtual*/ ";
 
             //if(isCtor && declaringType is ResolvedStruct)
@@ -135,7 +175,7 @@ namespace il2cpp_sdk_generator
             //}
 
             code += $"{MetadataReader.GetTypeString(returnType)} {Name.CSharpToCppIdentifier()}(";
-            for(int i =0;i<resolvedParameters.Count;i++)
+            for (int i = 0; i < resolvedParameters.Count; i++)
             {
                 code += resolvedParameters[i].ToHeaderCode();
                 if (i < resolvedParameters.Count - 1)
@@ -272,7 +312,7 @@ namespace il2cpp_sdk_generator
                     await sw.WriteAsync($")il2cpp::object_unbox(ret);\n");
                 }
             }
-            
+
             // code
             await sw.WriteAsync("}\n".Indent(indent));
         }
@@ -346,14 +386,14 @@ namespace il2cpp_sdk_generator
             }
             code += ")\n";
             code += "{\n".Indent(indent);
-            
-            if(resolvedParameters.Count > 0)
+
+            if (resolvedParameters.Count > 0)
             {
                 paramStr = "params";
-                code += $"void* params[{resolvedParameters.Count}] = {{".Indent(indent+2);
-                for(int i =0;i< resolvedParameters.Count;i++)
+                code += $"void* params[{resolvedParameters.Count}] = {{".Indent(indent + 2);
+                for (int i = 0; i < resolvedParameters.Count; i++)
                 {
-                    if(resolvedParameters[i].isValueType && !resolvedParameters[i].isOut)
+                    if (resolvedParameters[i].isValueType && !resolvedParameters[i].isOut)
                         code += "&";
 
                     code += resolvedParameters[i].Name;
@@ -366,7 +406,7 @@ namespace il2cpp_sdk_generator
             //void* params[4] = { parameter_1, &parameter_2, &parameter_3, &parameter_4 };
             code += "".Indent(indent + 2);
 
-            if(returnTypeStr.EndsWith("*"))
+            if (returnTypeStr.EndsWith("*"))
             {
                 code += $"return ({returnTypeStr})il2cpp::runtime_invoke({MI_Name}, {instanceStr}, {paramStr});\n";
             }
@@ -388,8 +428,8 @@ namespace il2cpp_sdk_generator
                     code += $")il2cpp::object_unbox(ret);\n";
                 }
             }
-            
-            
+
+
             // code
             code += "}\n".Indent(indent);
             return code;
@@ -407,7 +447,7 @@ namespace il2cpp_sdk_generator
         {
             get
             {
-                return (methodDef.flags & il2cpp_Constants.METHOD_ATTRIBUTE_VIRTUAL) != 0 && 
+                return (methodDef.flags & il2cpp_Constants.METHOD_ATTRIBUTE_VIRTUAL) != 0 &&
                     (methodDef.flags & il2cpp_Constants.METHOD_ATTRIBUTE_VTABLE_LAYOUT_MASK) == il2cpp_Constants.METHOD_ATTRIBUTE_NEW_SLOT;
             }
         }
@@ -449,7 +489,7 @@ namespace il2cpp_sdk_generator
         public string DemangledPrefix()
         {
             string prefix = $"{ReferencedString()}m{StaticString()}_{ValidString()}{VirtualString()}{AccessString()}{MetadataReader.GetSimpleTypeString(returnType)}";
-            for (int i =0;i<resolvedParameters.Count;i++)
+            for (int i = 0; i < resolvedParameters.Count; i++)
             {
                 if (!prefix.EndsWith("_"))
                     prefix += "_";
@@ -502,11 +542,11 @@ namespace il2cpp_sdk_generator
             return "";
         }
 
-        
+
 
         public void DemangleParams()
         {
-            for(int i =0;i< resolvedParameters.Count;i++)
+            for (int i = 0; i < resolvedParameters.Count; i++)
             {
                 ResolvedParameter resolvedParameter = resolvedParameters[i];
                 if (resolvedParameter.Name.isCSharpIdentifier())
@@ -535,7 +575,7 @@ namespace il2cpp_sdk_generator
             if (declaringType is ResolvedClass)
             {
                 ResolvedClass resolvedClass = declaringType.parentType as ResolvedClass;
-                while(overridenMethod == null && resolvedClass != null)
+                while (overridenMethod == null && resolvedClass != null)
                 {
                     if (resolvedClass.slottedMethods.TryGetValue(methodDef.slot, out var resolvedMethod))
                     {
@@ -547,9 +587,9 @@ namespace il2cpp_sdk_generator
                     {
                         resolvedClass = (ResolvedClass)resolvedClass.parentType;
                     }
-                }                
+                }
             }
-            else if(declaringType is ResolvedStruct)
+            else if (declaringType is ResolvedStruct)
             {
                 ResolvedStruct resolvedStruct = declaringType.parentType as ResolvedStruct;
                 while (overridenMethod == null && resolvedStruct != null)
@@ -571,7 +611,7 @@ namespace il2cpp_sdk_generator
                 broken_methods.Add(this);
 
             // TODO: Link Override methods and Virtual methods for reference linking
-            if(overridenMethod != null)
+            if (overridenMethod != null)
             {
                 CodeScanner.LinkOverride(overridenMethod, this);
             }

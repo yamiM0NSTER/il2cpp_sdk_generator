@@ -34,14 +34,14 @@ namespace il2cpp_sdk_generator
 
                 ResolvedClass resolvedClass = Metadata.resolvedTypes[i] as ResolvedClass;
 
-                for(int k =0;k< resolvedClass.miMethods.Count;k++)
+                for (int k = 0; k < resolvedClass.miMethods.Count; k++)
                 {
                     if (resolvedClass.miMethods[k].Name != "Combine")
                         continue;
                     if (resolvedClass.miMethods[k].resolvedParameters.Count != 2)
                         continue;
 
-                    Delegate_CombineMethodPtr = il2cpp.methodPointers[resolvedClass.miMethods[k].methodDef.methodIndex];
+                    Delegate_CombineMethodPtr = resolvedClass.miMethods[k].methodPtr;
                     break;
                 }
                 //multicastDelegateType = Metadata.resolvedTypes[i];
@@ -50,94 +50,99 @@ namespace il2cpp_sdk_generator
 
             m_peBytes = bytes;
 
-            ScanTextSection();
+            //ScanTextSection();
             Scanil2cppSection();
 
             funcPtrs = funcPtrs.Distinct().ToList();
             funcPtrs.Sort();
-            for (int i =0;i< funcPtrs.Count;i++)
+            for (int i = 0; i < funcPtrs.Count; i++)
             {
                 m_mapFunctionReferences.Add(funcPtrs[i], new List<ulong>());
                 m_mapReferencesToFunction.Add(funcPtrs[i], new List<ulong>());
             }
 
 
-
-            RUNTIME_FUNCTION runtimeFunc = null;//PortableExecutable.m_mapRuntimeFunctionPtrs
-            bool bFoundRuntimeFunc = PortableExecutable.m_mapRuntimeFunctionPtrs.TryGetValue(funcPtrs[0], out runtimeFunc);
-            ulong funcEnd = 0;
-            if (bFoundRuntimeFunc)
-                funcEnd = VA.FromRVA(runtimeFunc.EndAddress);
-
             var curFunc = funcPtrs[0];
             var nextFunc = funcPtrs[1];
             int funcPtrNum = 2;
+
             foreach (var pair in m_refs)
             {
-                // Next func
-                if(bFoundRuntimeFunc && pair.Key > funcEnd)
+                if (pair.Key >= nextFunc)
                 {
                     curFunc = nextFunc;
-                    if (curFunc == 0x181E404E0)
-                    {
-
-                    }
-                    //curFunc = funcPtrs.FirstOrDefault(ptr => ptr > funcEnd);
-                    bFoundRuntimeFunc = PortableExecutable.m_mapRuntimeFunctionPtrs.TryGetValue(curFunc, out runtimeFunc);
-                    if (bFoundRuntimeFunc)
-                    {
-                        funcEnd = VA.FromRVA(runtimeFunc.EndAddress);
-                        nextFunc = GetNextFunc(ref funcPtrNum, funcEnd);
-                        //nextFunc = funcPtrs.FirstOrDefault(ptr => ptr > funcEnd);
-                    }
-                    else
-                    {
-                        nextFunc = GetNextFunc(ref funcPtrNum, curFunc);
-                        //nextFunc = funcPtrs.FirstOrDefault(ptr => ptr > curFunc);
-                    }
-                    //if (nextFunc == 0)
-                    //    nextFunc = UInt64.MaxValue;
-                }
-                else if(!bFoundRuntimeFunc && pair.Key >= nextFunc)
-                {
-                    curFunc = nextFunc;
-                    if (curFunc == 0x181E404E0)
-                    {
-
-                    }
-                    bFoundRuntimeFunc = PortableExecutable.m_mapRuntimeFunctionPtrs.TryGetValue(curFunc, out runtimeFunc);
-                    if (bFoundRuntimeFunc)
-                    {
-                        funcEnd = VA.FromRVA(runtimeFunc.EndAddress);
-                        nextFunc = GetNextFunc(ref funcPtrNum, funcEnd);
-                        //nextFunc = funcPtrs.FirstOrDefault(ptr => ptr > funcEnd);
-                    }
-                    else
-                    {
-                        nextFunc = GetNextFunc(ref funcPtrNum, curFunc);
-                        //nextFunc = funcPtrs.FirstOrDefault(ptr => ptr > curFunc);
-                    }
-                    //if (nextFunc == 0)
-                    //    nextFunc = UInt64.MaxValue;
-
-                    //nextFunc = funcPtrs.FirstOrDefault(ptr => ptr > curFunc);
-
-                    
-                    //if (funcPtrNum < funcPtrs.Count)
-                    //    nextFunc = funcPtrs[funcPtrNum];
-                    //else
-                    //    nextFunc = UInt64.MaxValue;
-                    //funcPtrNum++;
+                    nextFunc = GetNextFunc(ref funcPtrNum, curFunc);
                 }
 
                 m_mapFunctionReferences[curFunc].Add(pair.Value);
                 m_mapReferencesToFunction[pair.Value].Add(curFunc);
-
-                if (curFunc == 0x181E404E0)
-                {
-
-                }
             }
+
+
+
+            //RUNTIME_FUNCTION runtimeFunc = null;//PortableExecutable.m_mapRuntimeFunctionPtrs
+            //bool bFoundRuntimeFunc = PortableExecutable.m_mapRuntimeFunctionPtrs.TryGetValue(funcPtrs[0], out runtimeFunc);
+            //ulong funcEnd = 0;
+            //if (bFoundRuntimeFunc)
+            //    funcEnd = VA.FromRVA(runtimeFunc.EndAddress);
+
+            //foreach (var pair in m_refs)
+            //{
+            //    // Next func
+            //    if (bFoundRuntimeFunc && pair.Key > funcEnd)
+            //    {
+            //        curFunc = nextFunc;
+            //        //curFunc = funcPtrs.FirstOrDefault(ptr => ptr > funcEnd);
+            //        bFoundRuntimeFunc = PortableExecutable.m_mapRuntimeFunctionPtrs.TryGetValue(curFunc, out runtimeFunc);
+            //        if (bFoundRuntimeFunc)
+            //        {
+            //            funcEnd = VA.FromRVA(runtimeFunc.EndAddress);
+            //            nextFunc = GetNextFunc(ref funcPtrNum, funcEnd);
+            //            //nextFunc = funcPtrs.FirstOrDefault(ptr => ptr > funcEnd);
+            //        }
+            //        else
+            //        {
+            //            nextFunc = GetNextFunc(ref funcPtrNum, curFunc);
+            //            //nextFunc = funcPtrs.FirstOrDefault(ptr => ptr > curFunc);
+            //        }
+            //        //if (nextFunc == 0)
+            //        //    nextFunc = UInt64.MaxValue;
+            //    }
+            //    else if (!bFoundRuntimeFunc && pair.Key >= nextFunc)
+            //    {
+            //        curFunc = nextFunc;
+            //        if (curFunc == 0x181E404E0)
+            //        {
+
+            //        }
+            //        bFoundRuntimeFunc = PortableExecutable.m_mapRuntimeFunctionPtrs.TryGetValue(curFunc, out runtimeFunc);
+            //        if (bFoundRuntimeFunc)
+            //        {
+            //            funcEnd = VA.FromRVA(runtimeFunc.EndAddress);
+            //            nextFunc = GetNextFunc(ref funcPtrNum, funcEnd);
+            //            //nextFunc = funcPtrs.FirstOrDefault(ptr => ptr > funcEnd);
+            //        }
+            //        else
+            //        {
+            //            nextFunc = GetNextFunc(ref funcPtrNum, curFunc);
+            //            //nextFunc = funcPtrs.FirstOrDefault(ptr => ptr > curFunc);
+            //        }
+            //        //if (nextFunc == 0)
+            //        //    nextFunc = UInt64.MaxValue;
+
+            //        //nextFunc = funcPtrs.FirstOrDefault(ptr => ptr > curFunc);
+
+
+            //        //if (funcPtrNum < funcPtrs.Count)
+            //        //    nextFunc = funcPtrs[funcPtrNum];
+            //        //else
+            //        //    nextFunc = UInt64.MaxValue;
+            //        //funcPtrNum++;
+            //    }
+
+            //    m_mapFunctionReferences[curFunc].Add(pair.Value);
+            //    m_mapReferencesToFunction[pair.Value].Add(curFunc);
+            //}
 
             Console.WriteLine($"Functions[{funcPtrs.Count}]:");
             Console.WriteLine($"[0x{funcPtrs[0]:X8}]");
@@ -158,12 +163,12 @@ namespace il2cpp_sdk_generator
 
             ResolveTrustedRefs();
         }
-        
+
         static ulong GetNextFunc(ref int curIdx, ulong higherThan = 0)
         {
             ulong candidate = 0;
 
-            if(curIdx >= funcPtrs.Count)
+            if (curIdx >= funcPtrs.Count)
                 return UInt64.MaxValue;
 
             do
@@ -187,7 +192,7 @@ namespace il2cpp_sdk_generator
             var codeReader = new ByteArrayCodeReader(m_peBytes, (int)Offset.FromVA(va), (int)len);
             var decoder = Decoder.Create(64, codeReader);
             decoder.IP = va;
-            ulong EndRip = va+len;
+            ulong EndRip = va + len;
 
             while (decoder.IP < EndRip)
             {
@@ -322,18 +327,15 @@ namespace il2cpp_sdk_generator
                 ulong addr = decoder.IP;
                 decoder.Decode(out var instruction);
 
-                if (instruction.Mnemonic == Mnemonic.Mov) // stringliterals
-                {
-                    if (instruction.Op1Kind == OpKind.Memory && instruction.IsIPRelativeMemoryOperand)
-                    {
-                        var movTarget = instruction.IPRelativeMemoryAddress;
+                if (instruction.Mnemonic != Mnemonic.Mov) // stringliterals
+                    continue;
 
-                        if (il2cpp.mapStringLiteralPtrsByMetadataUsages.ContainsKey(movTarget))
-                        {
-                            literals.Add(MetadataReader.GetStringLiteralFromIndex(il2cpp.mapStringLiteralPtrsByMetadataUsages[movTarget]));
-                        }
-                    }
-                }
+                if (instruction.Op1Kind != OpKind.Memory || !instruction.IsIPRelativeMemoryOperand)
+                    continue;
+                var movTarget = instruction.IPRelativeMemoryAddress;
+
+                if (il2cpp.mapStringLiteralPtrsByMetadataUsages.ContainsKey(movTarget))
+                    literals.Add(MetadataReader.GetStringLiteralFromIndex(il2cpp.mapStringLiteralPtrsByMetadataUsages[movTarget]));
             }
 
             return literals;
@@ -376,7 +378,7 @@ namespace il2cpp_sdk_generator
 
                     ulong targetAddr = instruction.NearBranch64;
 
-                    if(targetAddr == Delegate_CombineMethodPtr)
+                    if (targetAddr == Delegate_CombineMethodPtr)
                     {
 
                     }
@@ -396,7 +398,7 @@ namespace il2cpp_sdk_generator
                 }
                 else if (instruction.Mnemonic == Mnemonic.Jmp)
                 {
-                    if(instruction.OpCode.Code == Code.Jmp_rel8_64)
+                    if (instruction.OpCode.Code == Code.Jmp_rel8_64)
                     {
                         continue;
                     }
@@ -469,12 +471,12 @@ namespace il2cpp_sdk_generator
 
                     if (targetAddr == Delegate_CombineMethodPtr)
                     {
-                        if(instructionHistory[0].Mnemonic == Mnemonic.Mov && instructionHistory[0].Op0Register == Register.R8 && instructionHistory[0].MemoryBase == Register.RIP)
+                        if (instructionHistory[0].Mnemonic == Mnemonic.Mov && instructionHistory[0].Op0Register == Register.R8 && instructionHistory[0].MemoryBase == Register.RIP)
                         {
                             // TODO: see what can be done when instruction refers to register eg. RAX+10
 
                             ulong va = instructionHistory[0].IPRelativeMemoryAddress;
-                            if(il2cpp.mapMethodPtrsByMetadataUsages.TryGetValue(va, out var val))
+                            if (il2cpp.mapMethodPtrsByMetadataUsages.TryGetValue(va, out var val))
                             {
                                 // TODO: maybe add as Delegate usage idk
                                 if (!m_refs.ContainsKey(instructionHistory[0].IP))
@@ -516,14 +518,8 @@ namespace il2cpp_sdk_generator
                         Console.WriteLine($"[0x{addr:X8}] {instruction.ToString()} {instruction.Op0Kind} {instruction.IsCallNear}");
                         continue;
                     }
-                    //if (targetAddr == 0x00000000)
-                    //    Console.WriteLine($"[0x{addr:X8}] {instruction.ToString()} {instruction.Op0Kind}");
 
-                    //if (!funcPtrs.Contains(targetAddr))
-                    {
-                        //Console.WriteLine($"[0x{addr:X8}] {instruction.ToString()} {instruction.Op0Kind}");
-                        funcPtrs.Add(targetAddr);
-                    }
+                    funcPtrs.Add(targetAddr);
                     m_refs.Add(addr, targetAddr);
                 }
                 else if (instruction.Mnemonic == Mnemonic.Jmp)
@@ -547,14 +543,8 @@ namespace il2cpp_sdk_generator
                         continue;
                     }
                     // TODO: ignore addresses outside of range
-                    //if (targetAddr == 0x169E4EA10)
-                    //    Console.WriteLine($"[0x{addr:X8}] {instruction.ToString()} {instruction.Op0Kind}");
 
-                    //if (!funcPtrs.Contains(targetAddr))
-                    {
-                        //Console.WriteLine($"[0x{addr:X8}] {instruction.ToString()} {instruction.Op0Kind} {instruction.OpCode.Code.ToString()}");
-                        funcPtrs.Add(targetAddr);
-                    }
+                    funcPtrs.Add(targetAddr);
                     m_refs.Add(addr, targetAddr);
                 }
             }
@@ -582,21 +572,20 @@ namespace il2cpp_sdk_generator
                 ResolvedClass resolvedClass = resolvedType as ResolvedClass;
                 for (int i = 0; i < resolvedClass.miMethods.Count; i++)
                 {
-                    if (resolvedClass.miMethods[i].methodDef.methodIndex == -1 || resolvedClass.miMethods[i].methodDef.methodIndex >= il2cpp.codeRegistration64.methodPointersCount)
+                    var resolvedMethod = resolvedClass.miMethods[i];
+
+                    var methodPtr = resolvedMethod.methodPtr;
+
+                    if (methodPtr == 0)
                         continue;
 
-                    //if (!resolvedClass.miMethods[i].isMangled)
-                    //    continue;
-
-                    var methodPtr = il2cpp.methodPointers[resolvedClass.miMethods[i].methodDef.methodIndex];
-                    resolvedClass.miMethods[i].methodPtr = methodPtr;
-                    if (!resolvedClass.miMethods[i].isMangled || resolvedClass.miMethods[i].isReferenced)
+                    if (!resolvedMethod.isMangled || resolvedMethod.isReferenced)
                     {
                         if (!mapTrustedMethods.ContainsKey(methodPtr))
                         {
                             mapTrustedMethods.Add(methodPtr, new List<ResolvedMethod>());
                         }
-                        mapTrustedMethods[methodPtr].Add(resolvedClass.miMethods[i]);
+                        mapTrustedMethods[methodPtr].Add(resolvedMethod);
                     }
                     else
                     {
@@ -604,7 +593,7 @@ namespace il2cpp_sdk_generator
                         {
                             mapMangledMethods.Add(methodPtr, new List<ResolvedMethod>());
                         }
-                        mapMangledMethods[methodPtr].Add(resolvedClass.miMethods[i]);
+                        mapMangledMethods[methodPtr].Add(resolvedMethod);
                     }
                 }
 
@@ -619,21 +608,20 @@ namespace il2cpp_sdk_generator
                 ResolvedStruct resolvedStruct = resolvedType as ResolvedStruct;
                 for (int i = 0; i < resolvedStruct.miMethods.Count; i++)
                 {
-                    if (resolvedStruct.miMethods[i].methodDef.methodIndex == -1 || resolvedStruct.miMethods[i].methodDef.methodIndex >= il2cpp.codeRegistration64.methodPointersCount)
+                    var resolvedMethod = resolvedStruct.miMethods[i];
+
+                    var methodPtr = resolvedMethod.methodPtr;
+
+                    if (methodPtr == 0)
                         continue;
 
-                    //if (!resolvedClass.miMethods[i].isMangled)
-                    //    continue;
-
-                    var methodPtr = il2cpp.methodPointers[resolvedStruct.miMethods[i].methodDef.methodIndex];
-                    resolvedStruct.miMethods[i].methodPtr = methodPtr;
-                    if (!resolvedStruct.miMethods[i].isMangled || resolvedStruct.miMethods[i].isReferenced)
+                    if (!resolvedMethod.isMangled || resolvedMethod.isReferenced)
                     {
                         if (!mapTrustedMethods.ContainsKey(methodPtr))
                         {
                             mapTrustedMethods.Add(methodPtr, new List<ResolvedMethod>());
                         }
-                        mapTrustedMethods[methodPtr].Add(resolvedStruct.miMethods[i]);
+                        mapTrustedMethods[methodPtr].Add(resolvedMethod);
                     }
                     else
                     {
@@ -641,7 +629,7 @@ namespace il2cpp_sdk_generator
                         {
                             mapMangledMethods.Add(methodPtr, new List<ResolvedMethod>());
                         }
-                        mapMangledMethods[methodPtr].Add(resolvedStruct.miMethods[i]);
+                        mapMangledMethods[methodPtr].Add(resolvedMethod);
                     }
                 }
             }
@@ -662,46 +650,40 @@ namespace il2cpp_sdk_generator
                 mapTrustedMethods.Clear();
                 for (int i = 0; i < trustedMethods.Length; i++)
                 {
-                    if(trustedMethods[i].Key == 0x181E404E0)
-                    {
+                    bool success = m_mapFunctionReferences.TryGetValue(trustedMethods[i].Key, out var pointers);
 
-                    }
-
-                    var pointers = m_mapFunctionReferences[trustedMethods[i].Key];
+                    if (!success)
+                        continue;
+                    //var pointers = m_mapFunctionReferences[];
 
                     for (int k = 0; k < pointers.Count; k++)
                     {
                         if (!mapMangledMethods.TryGetValue(pointers[k], out var methods))
                             continue;
 
-                        methods.ForEach((m) => 
+                        methods.ForEach((m) =>
                         {
-                            //m.isReferenced = true;
-                            //if (m.isOverride && m.overridenMethod != null)
-                            //    m.overridenMethod.isReferenced = true;
-
-                            if (mapOverrideLinks.TryGetValue(m, out var virtualMethod))
-                            {
-                                virtualMethod.isReferenced = true;
-                                if(mapMangledMethods.ContainsKey(virtualMethod.methodPtr))
-                                {
-                                    mapTrustedMethods.Add(virtualMethod.methodPtr, mapMangledMethods[virtualMethod.methodPtr]);
-                                    mapMangledMethods.Remove(virtualMethod.methodPtr);
-                                }
-
-                                for (int j=0;j<mapVirtualLinks[virtualMethod].Count;j++)
-                                {
-                                    mapVirtualLinks[virtualMethod][j].isReferenced = true;
-                                    if (mapMangledMethods.ContainsKey(mapVirtualLinks[virtualMethod][j].methodPtr))
-                                    {
-                                        mapTrustedMethods.Add(mapVirtualLinks[virtualMethod][j].methodPtr, mapMangledMethods[mapVirtualLinks[virtualMethod][j].methodPtr]);
-                                        mapMangledMethods.Remove(mapVirtualLinks[virtualMethod][j].methodPtr);
-                                    }
-                                }
-                            }
-                            else
+                            if (!mapOverrideLinks.TryGetValue(m, out var virtualMethod))
                             {
                                 m.isReferenced = true;
+                                return;
+                            }
+
+                            virtualMethod.isReferenced = true;
+                            if (mapMangledMethods.ContainsKey(virtualMethod.methodPtr))
+                            {
+                                mapTrustedMethods.Add(virtualMethod.methodPtr, mapMangledMethods[virtualMethod.methodPtr]);
+                                mapMangledMethods.Remove(virtualMethod.methodPtr);
+                            }
+
+                            for (int j = 0; j < mapVirtualLinks[virtualMethod].Count; j++)
+                            {
+                                mapVirtualLinks[virtualMethod][j].isReferenced = true;
+                                if (mapMangledMethods.ContainsKey(mapVirtualLinks[virtualMethod][j].methodPtr))
+                                {
+                                    mapTrustedMethods.Add(mapVirtualLinks[virtualMethod][j].methodPtr, mapMangledMethods[mapVirtualLinks[virtualMethod][j].methodPtr]);
+                                    mapMangledMethods.Remove(mapVirtualLinks[virtualMethod][j].methodPtr);
+                                }
                             }
                         });
 
@@ -728,7 +710,7 @@ namespace il2cpp_sdk_generator
 
         public static void LinkOverride(ResolvedMethod virtualMethod, ResolvedMethod overrideMethod)
         {
-            if(!mapVirtualLinks.TryGetValue(virtualMethod, out var list))
+            if (!mapVirtualLinks.TryGetValue(virtualMethod, out var list))
             {
                 list = new List<ResolvedMethod>();
                 mapVirtualLinks.Add(virtualMethod, list);

@@ -387,6 +387,15 @@ namespace il2cpp_sdk_generator
         /// The characteristics of the image.
         /// </summary>
         public DWORD Characteristics;
+
+        public string ReadableName
+        {
+            get
+            {
+                return $"{System.Text.Encoding.UTF8.GetString(this.Name)} [{System.Text.Encoding.UTF8.GetString(this.Name).TrimEnd('\0').Length}]";
+            }
+        }
+
     }
 
 
@@ -580,28 +589,28 @@ namespace il2cpp_sdk_generator
 
     static class PE_Constants
     {
-        public const USHORT IMAGE_DOS_SIGNATURE    = 0x5A4D; // MZ
-        public const USHORT IMAGE_OS2_SIGNATURE    = 0x454E; // NE
+        public const USHORT IMAGE_DOS_SIGNATURE = 0x5A4D; // MZ
+        public const USHORT IMAGE_OS2_SIGNATURE = 0x454E; // NE
         public const USHORT IMAGE_OS2_SIGNATURE_LE = 0x454C; // LE
-        public const LONG   IMAGE_NT_SIGNATURE     = 0x00004550; // PE00
+        public const LONG IMAGE_NT_SIGNATURE = 0x00004550; // PE00
 
         public const USHORT IMAGE_NUMBEROF_DIRECTORY_ENTRIES = 16;
         // Data Directories
-        public const USHORT IMAGE_DIRECTORY_ENTRY_EXPORT         = 0;  // Export Directory
-        public const USHORT IMAGE_DIRECTORY_ENTRY_IMPORT         = 1;  // Import Directory
-        public const USHORT IMAGE_DIRECTORY_ENTRY_RESOURCE       = 2;  // Resource Directory
-        public const USHORT IMAGE_DIRECTORY_ENTRY_EXCEPTION      = 3;  // Exception Directory
-        public const USHORT IMAGE_DIRECTORY_ENTRY_SECURITY       = 4;  // Security Directory
-        public const USHORT IMAGE_DIRECTORY_ENTRY_BASERELOC      = 5;  // Base Relocation Table
-        public const USHORT IMAGE_DIRECTORY_ENTRY_DEBUG          = 6;  // Debug Directory
-                //      IMAGE_DIRECTORY_ENTRY_COPYRIGHT      = 7  ; // (X86 usage)
-        public const USHORT IMAGE_DIRECTORY_ENTRY_ARCHITECTURE   = 7;  // Architecture Specific Data
-        public const USHORT IMAGE_DIRECTORY_ENTRY_GLOBALPTR      = 8;  // RVA of GP
-        public const USHORT IMAGE_DIRECTORY_ENTRY_TLS            = 9;  // TLS Directory
-        public const USHORT IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG    = 10; // Load Configuration Directory
-        public const USHORT IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT   = 11; // Bound Import Directory in headers
-        public const USHORT IMAGE_DIRECTORY_ENTRY_IAT            = 12; // Import Address Table
-        public const USHORT IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT   = 13; // Delay Load Import Descriptors
+        public const USHORT IMAGE_DIRECTORY_ENTRY_EXPORT = 0;  // Export Directory
+        public const USHORT IMAGE_DIRECTORY_ENTRY_IMPORT = 1;  // Import Directory
+        public const USHORT IMAGE_DIRECTORY_ENTRY_RESOURCE = 2;  // Resource Directory
+        public const USHORT IMAGE_DIRECTORY_ENTRY_EXCEPTION = 3;  // Exception Directory
+        public const USHORT IMAGE_DIRECTORY_ENTRY_SECURITY = 4;  // Security Directory
+        public const USHORT IMAGE_DIRECTORY_ENTRY_BASERELOC = 5;  // Base Relocation Table
+        public const USHORT IMAGE_DIRECTORY_ENTRY_DEBUG = 6;  // Debug Directory
+                                                              //      IMAGE_DIRECTORY_ENTRY_COPYRIGHT      = 7  ; // (X86 usage)
+        public const USHORT IMAGE_DIRECTORY_ENTRY_ARCHITECTURE = 7;  // Architecture Specific Data
+        public const USHORT IMAGE_DIRECTORY_ENTRY_GLOBALPTR = 8;  // RVA of GP
+        public const USHORT IMAGE_DIRECTORY_ENTRY_TLS = 9;  // TLS Directory
+        public const USHORT IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG = 10; // Load Configuration Directory
+        public const USHORT IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT = 11; // Bound Import Directory in headers
+        public const USHORT IMAGE_DIRECTORY_ENTRY_IAT = 12; // Import Address Table
+        public const USHORT IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT = 13; // Delay Load Import Descriptors
         public const USHORT IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR = 14; // COM Runtime descriptor
 
 

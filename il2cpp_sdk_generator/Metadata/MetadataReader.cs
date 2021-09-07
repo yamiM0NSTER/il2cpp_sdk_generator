@@ -64,8 +64,8 @@ namespace il2cpp_sdk_generator
             Metadata.interfaceOffsetPairs = reader.ReadArray<Il2CppInterfaceOffsetPair>(Metadata.header.interfaceOffsetsCount / typeof(Il2CppInterfaceOffsetPair).GetSizeOf());
             stream.Position = Metadata.header.typeDefinitionsOffset;
             Metadata.typeDefinitions = reader.ReadArray<Il2CppTypeDefinition>(Metadata.header.typeDefinitionsCount / typeof(Il2CppTypeDefinition).GetSizeOf());
-            stream.Position = Metadata.header.rgctxEntriesOffset;
-            Metadata.rgctxEntries = reader.ReadArray<Il2CppRGCTXDefinition>(Metadata.header.rgctxEntriesCount / typeof(Il2CppRGCTXDefinition).GetSizeOf());
+            //stream.Position = Metadata.header.rgctxEntriesOffset;
+            //Metadata.rgctxEntries = reader.ReadArray<Il2CppRGCTXDefinition>(Metadata.header.rgctxEntriesCount / typeof(Il2CppRGCTXDefinition).GetSizeOf());
             stream.Position = Metadata.header.imagesOffset;
             Metadata.imageDefinitions = reader.ReadArray<Il2CppImageDefinition>(Metadata.header.imagesCount / typeof(Il2CppImageDefinition).GetSizeOf());
             stream.Position = Metadata.header.assembliesOffset;
@@ -94,7 +94,7 @@ namespace il2cpp_sdk_generator
         {
             ResolveTypes();
 
-            for(int i =0; i < Metadata.fieldDefaultValues.Length;i++)
+            for (int i = 0; i < Metadata.fieldDefaultValues.Length; i++)
             {
                 Metadata.mapFieldDefValues.Add(Metadata.fieldDefaultValues[i].fieldIndex, Metadata.fieldDefaultValues[i]);
             }
@@ -114,39 +114,26 @@ namespace il2cpp_sdk_generator
 
             // MetadataRegistration.metadataUsagesCount is actually never used so we get real value ourselves
             il2cpp.realMetadataUsagesCount = 0;
-            for(int i =0;i<Metadata.metadataUsagePairs.Length;i++)
+            for (int i = 0; i < Metadata.metadataUsagePairs.Length; i++)
             {
-                if (il2cpp.realMetadataUsagesCount < Metadata.metadataUsagePairs[i].destinationIndex)
-                    il2cpp.realMetadataUsagesCount = Metadata.metadataUsagePairs[i].destinationIndex;
+                var usagePair = Metadata.metadataUsagePairs[i];
+                if (il2cpp.realMetadataUsagesCount < usagePair.destinationIndex)
+                    il2cpp.realMetadataUsagesCount = usagePair.destinationIndex;
 
-                //usageMethods
-                //if (Metadata.metadataUsagePairs[i].EncodedIndexType != Il2CppMetadataUsage.kIl2CppMetadataUsageMethodDef)
-                //    continue;
-
-                if (Metadata.metadataUsagePairs[i].EncodedIndexType == Il2CppMetadataUsage.kIl2CppMetadataUsageMethodDef)
+                if (usagePair.EncodedIndexType == Il2CppMetadataUsage.kIl2CppMetadataUsageMethodDef)
                 {
-                    if (Metadata.usageMethods.ContainsKey(Metadata.metadataUsagePairs[i].destinationIndex))
-                    {
+                    if (Metadata.usageMethods.ContainsKey(usagePair.destinationIndex))
+                        continue;
 
-                    }
-                    else
-                    {
-                        Metadata.usageMethods.Add(Metadata.metadataUsagePairs[i].destinationIndex, Metadata.metadataUsagePairs[i].DecodedMethodIndex);
-                    }
+                    Metadata.usageMethods.Add(usagePair.destinationIndex, usagePair.DecodedMethodIndex);
                 }
-                else if (Metadata.metadataUsagePairs[i].EncodedIndexType == Il2CppMetadataUsage.kIl2CppMetadataUsageStringLiteral)
+                else if (usagePair.EncodedIndexType == Il2CppMetadataUsage.kIl2CppMetadataUsageStringLiteral)
                 {
-                    if (Metadata.usageStringLiterals.ContainsKey(Metadata.metadataUsagePairs[i].destinationIndex))
-                    {
+                    if (Metadata.usageStringLiterals.ContainsKey(usagePair.destinationIndex))
+                        continue;
 
-                    }
-                    else
-                    {
-                        Metadata.usageStringLiterals.Add(Metadata.metadataUsagePairs[i].destinationIndex, Metadata.metadataUsagePairs[i].DecodedMethodIndex);
-                    }
+                    Metadata.usageStringLiterals.Add(usagePair.destinationIndex, usagePair.DecodedMethodIndex);
                 }
-
-
             }
         }
 
@@ -166,7 +153,7 @@ namespace il2cpp_sdk_generator
 
         public static string GetString(Int32 idx)
         {
-            if(mapIndexStringCache.TryGetValue(idx, out string result))
+            if (mapIndexStringCache.TryGetValue(idx, out string result))
                 return result;
 
             stream.Position = Metadata.header.stringOffset + idx;
@@ -180,9 +167,10 @@ namespace il2cpp_sdk_generator
             ResolvedImage resolvedImage = new ResolvedImage();
             resolvedImage.Name = GetString(image.nameIndex);
 
-            for(int i = image.typeStart; i< image.typeStart+image.typeCount;i++)
+            for (int i = image.typeStart; i < image.typeStart + image.typeCount; i++)
             {
                 var resolvedType = Metadata.resolvedTypes[i];
+                resolvedType.resolvedImage = resolvedImage;
                 if (resolvedType.isNested)
                     continue;
 
@@ -194,7 +182,7 @@ namespace il2cpp_sdk_generator
                 }
 
                 // TODO: depending on type put to correct var. enums, classes/structs?
-                if(resolvedType is ResolvedEnum)
+                if (resolvedType is ResolvedEnum)
                     resolvedNamespace.Enums.Add(resolvedType);
                 else
                     resolvedNamespace.Types.Add(resolvedType);
@@ -228,7 +216,7 @@ namespace il2cpp_sdk_generator
         public void ResolveTypes()
         {
             Metadata.resolvedTypes = new ResolvedType[Metadata.typeDefinitions.Length];
-            for(int i=0;i< Metadata.typeDefinitions.Length;i++)
+            for (int i = 0; i < Metadata.typeDefinitions.Length; i++)
             {
                 ResolveType(i);
                 //if (Metadata.typeDefinitions[i].genericContainerIndex < 0)
@@ -236,7 +224,7 @@ namespace il2cpp_sdk_generator
             }
         }
 
-        
+
         const uint ClassSemanticsMask = 32;
 
         internal static Dictionary<Int32, ResolvedGenericClass> mapResolvedGenericClasses = new Dictionary<Int32, ResolvedGenericClass>();
@@ -248,9 +236,9 @@ namespace il2cpp_sdk_generator
                 return Metadata.resolvedTypes[typeIdx];
 
             var typeDef = Metadata.typeDefinitions[typeIdx];
-            
+
             ResolvedType resolvedType = null;
-            
+
             // TODO: Resolved class, struct, enum, interface
             //resolvedType = new ResolvedType(typeDef, typeIdx);
 
@@ -283,7 +271,7 @@ namespace il2cpp_sdk_generator
                             resolvedType = new ResolvedClass(typeDef, typeIdx);
                         }
                     }
-                        
+
                 }
                 //if(typeDef.genericContainerIndex >= 0)
                 //{
@@ -316,13 +304,13 @@ namespace il2cpp_sdk_generator
         public static bool GetDefaultFieldValue(Int32 fieldIndex, out object val)
         {
             val = null;
-            if(!Metadata.mapFieldDefValues.TryGetValue(fieldIndex, out var il2CppFieldDefaultValue))
+            if (!Metadata.mapFieldDefValues.TryGetValue(fieldIndex, out var il2CppFieldDefaultValue))
                 return false;
 
             // !!!!!!!!! requires il2cpp to be processed
             var type = il2cpp.types[il2CppFieldDefaultValue.typeIndex];
             stream.Position = il2CppFieldDefaultValue.dataIndex + Metadata.header.fieldAndParameterDefaultValueDataOffset;
-            switch(type.type)
+            switch (type.type)
             {
                 case Il2CppTypeEnum.IL2CPP_TYPE_U1:
                     {
@@ -391,7 +379,7 @@ namespace il2cpp_sdk_generator
         {
             for (int i = 0; i < Metadata.header.parameterDefaultValuesCount; i++)
             {
-                if(i == 103846)
+                if (i == 103846)
                 {
 
                 }
@@ -406,7 +394,7 @@ namespace il2cpp_sdk_generator
 
                 var type = il2cpp.types[il2CppParameterDefaultValue.typeIndex];
 
-                
+
 
                 if (il2CppParameterDefaultValue.dataIndex == -1)
                 {
@@ -423,15 +411,15 @@ namespace il2cpp_sdk_generator
                         case Il2CppTypeEnum.IL2CPP_TYPE_I4:
                         case Il2CppTypeEnum.IL2CPP_TYPE_I8:
                         case Il2CppTypeEnum.IL2CPP_TYPE_VALUETYPE:
-                        {
-                            val = 0;
-                            break;
-                        }
+                            {
+                                val = 0;
+                                break;
+                            }
                         case Il2CppTypeEnum.IL2CPP_TYPE_BOOLEAN:
-                        {
-                            val = false;
-                            break;
-                        }
+                            {
+                                val = false;
+                                break;
+                            }
                     }
 
                     if (type.type == Il2CppTypeEnum.IL2CPP_TYPE_I4)
@@ -442,103 +430,103 @@ namespace il2cpp_sdk_generator
                     continue;
                     //return true;
                 }
-                
+
                 stream.Position = il2CppParameterDefaultValue.dataIndex + Metadata.header.fieldAndParameterDefaultValueDataOffset;
                 switch (type.type)
                 {
-                case Il2CppTypeEnum.IL2CPP_TYPE_U1:
-                    {
-                        // TODO: Store value
-                        val = reader.Read<byte>();
-                        break;
-                    }
-                case Il2CppTypeEnum.IL2CPP_TYPE_U2:
-                    {
-                        // TODO: Store value
-                        val = reader.Read<UInt16>();
-                        break;
-                    }
-                case Il2CppTypeEnum.IL2CPP_TYPE_U4:
-                    {
-                        // TODO: Store value
-                        val = reader.Read<UInt32>();
-                        break;
-                    }
-                case Il2CppTypeEnum.IL2CPP_TYPE_U8:
-                    {
-                        // TODO: Store value
-                        val = reader.Read<UInt64>();
-                        break;
-                    }
-                case Il2CppTypeEnum.IL2CPP_TYPE_I1:
-                    {
-                        // TODO: Store value
-                        val = reader.Read<SByte>();
-                        break;
-                    }
-                case Il2CppTypeEnum.IL2CPP_TYPE_I2:
-                    {
-                        // TODO: Store value
-                        val = reader.Read<Int16>();
-                        break;
-                    }
-                case Il2CppTypeEnum.IL2CPP_TYPE_I4:
-                    {
-                        // TODO: Store value
-                        val = reader.Read<Int32>();
-                        break;
-                    }
-                case Il2CppTypeEnum.IL2CPP_TYPE_I8:
-                    {
-                        // TODO: Store value
-                        val = reader.Read<Int64>();
-                        break;
-                    }
-                case Il2CppTypeEnum.IL2CPP_TYPE_BOOLEAN:
-                    {
-                        // TODO: Store value
-                        val = reader.Read<Boolean>();
-                        break;
-                    }
-                case Il2CppTypeEnum.IL2CPP_TYPE_STRING:
-                    {
-                        // TODO: Store value
-                        int strlen = reader.Read<Int32>();
-                        val = Encoding.UTF8.GetString(reader.ReadBytes(strlen));
-                        //Console.WriteLine($"GetDefaultParameterValue: string => {val}");
-                        break;
-                    }
-                case Il2CppTypeEnum.IL2CPP_TYPE_R4:
-                    {
-                        // TODO: Store value
-                        val = reader.Read<float>();
-                        break;
-                    }
-                case Il2CppTypeEnum.IL2CPP_TYPE_R8:
-                    {
-                        // TODO: Store value
-                        val = reader.Read<double>();
-                        break;
-                    }
-                case Il2CppTypeEnum.IL2CPP_TYPE_CHAR:
-                    {
-                        // TODO: Store value
-                        val = BitConverter.ToChar(reader.ReadBytes(2), 0);
-                        break;
-                    }
-                default:
-                    {
-                        Console.WriteLine($"GetDefaultParameterValue: unhandled type => {type.type}");
-                        //return false;
-                        break;
-                    }
+                    case Il2CppTypeEnum.IL2CPP_TYPE_U1:
+                        {
+                            // TODO: Store value
+                            val = reader.Read<byte>();
+                            break;
+                        }
+                    case Il2CppTypeEnum.IL2CPP_TYPE_U2:
+                        {
+                            // TODO: Store value
+                            val = reader.Read<UInt16>();
+                            break;
+                        }
+                    case Il2CppTypeEnum.IL2CPP_TYPE_U4:
+                        {
+                            // TODO: Store value
+                            val = reader.Read<UInt32>();
+                            break;
+                        }
+                    case Il2CppTypeEnum.IL2CPP_TYPE_U8:
+                        {
+                            // TODO: Store value
+                            val = reader.Read<UInt64>();
+                            break;
+                        }
+                    case Il2CppTypeEnum.IL2CPP_TYPE_I1:
+                        {
+                            // TODO: Store value
+                            val = reader.Read<SByte>();
+                            break;
+                        }
+                    case Il2CppTypeEnum.IL2CPP_TYPE_I2:
+                        {
+                            // TODO: Store value
+                            val = reader.Read<Int16>();
+                            break;
+                        }
+                    case Il2CppTypeEnum.IL2CPP_TYPE_I4:
+                        {
+                            // TODO: Store value
+                            val = reader.Read<Int32>();
+                            break;
+                        }
+                    case Il2CppTypeEnum.IL2CPP_TYPE_I8:
+                        {
+                            // TODO: Store value
+                            val = reader.Read<Int64>();
+                            break;
+                        }
+                    case Il2CppTypeEnum.IL2CPP_TYPE_BOOLEAN:
+                        {
+                            // TODO: Store value
+                            val = reader.Read<Boolean>();
+                            break;
+                        }
+                    case Il2CppTypeEnum.IL2CPP_TYPE_STRING:
+                        {
+                            // TODO: Store value
+                            int strlen = reader.Read<Int32>();
+                            val = Encoding.UTF8.GetString(reader.ReadBytes(strlen));
+                            //Console.WriteLine($"GetDefaultParameterValue: string => {val}");
+                            break;
+                        }
+                    case Il2CppTypeEnum.IL2CPP_TYPE_R4:
+                        {
+                            // TODO: Store value
+                            val = reader.Read<float>();
+                            break;
+                        }
+                    case Il2CppTypeEnum.IL2CPP_TYPE_R8:
+                        {
+                            // TODO: Store value
+                            val = reader.Read<double>();
+                            break;
+                        }
+                    case Il2CppTypeEnum.IL2CPP_TYPE_CHAR:
+                        {
+                            // TODO: Store value
+                            val = BitConverter.ToChar(reader.ReadBytes(2), 0);
+                            break;
+                        }
+                    default:
+                        {
+                            Console.WriteLine($"GetDefaultParameterValue: unhandled type => {type.type}");
+                            //return false;
+                            break;
+                        }
                 }
 
                 Metadata.mapParamDefValues.Add(i, val);
                 //Metadata.mapParameterDefValues.Add(i, )
             }
 
-            
+
         }
 
         // Do it like TryGetValue in Dictionary
@@ -651,7 +639,7 @@ namespace il2cpp_sdk_generator
 
         public static string GetTypeString(Il2CppType type, bool useCache = true)
         {
-            if(useCache && mapTypeStringCache.TryGetValue(type, out string result))
+            if (useCache && mapTypeStringCache.TryGetValue(type, out string result))
                 return result;
 
             switch (type.type)
@@ -814,14 +802,14 @@ namespace il2cpp_sdk_generator
                     break;
             }
 
-            lock(mapTypeStringCache)
+            lock (mapTypeStringCache)
             {
                 if (mapTypeStringCache.ContainsKey(type))
                     mapTypeStringCache[type] = result;
                 else
                     mapTypeStringCache.Add(type, result);
             }
-            
+
             return result;
         }
 
@@ -837,7 +825,7 @@ namespace il2cpp_sdk_generator
                     {
                         return Metadata.resolvedTypes[type.data.klassIndex];
                     }
-                    
+
                 case Il2CppTypeEnum.IL2CPP_TYPE_GENERICINST:
                     {
                         Resolvedil2CppGenericClass genericClass = il2cppReader.GetIl2CppGenericClass(type.data.generic_classPtr);
@@ -930,7 +918,7 @@ namespace il2cpp_sdk_generator
                         // TODO: Change to generated structs when ready
                         Resolvedil2CppGenericClass genericClass = il2cppReader.GetIl2CppGenericClass(type.data.generic_classPtr);
                         //Il2CppGenericClass generic_class = il2cppReader.GetIl2CppGenericClass(type.data.generic_classPtr);
-                        
+
                         string typeStr = $"{Metadata.resolvedTypes[genericClass.genericClass.typeDefinitionIndex].Name}";
                         // For whatever reason generic type names end with ` and digit (eg. List`1)
                         if (typeStr.Contains('`'))

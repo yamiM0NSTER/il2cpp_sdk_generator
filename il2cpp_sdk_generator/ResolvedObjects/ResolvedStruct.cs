@@ -144,14 +144,14 @@ namespace il2cpp_sdk_generator
                     //        }
                     //    }
                     //}
-                    
+
                     instanceMethods.Add(resolvedMethod);
                 }
                 else
                 {
                     staticMethods.Add(resolvedMethod);
                 }
-                    
+
                 //if (methodDef.genericContainerIndex >= 0 && name == "GetComponent")
                 //    Console.WriteLine();
             }
@@ -176,6 +176,20 @@ namespace il2cpp_sdk_generator
 
             //Console.WriteLine("ResolvedStruct::Resolve()");
             isResolved = true;
+        }
+
+        private bool IsNestedWithoutForward(ResolvedType nestedType)
+        {
+            if ((Name == "ConfiguredTaskAwaitable" && nestedType.Name == "ConfiguredTaskAwaiter") ||
+                        (Name == "MonoAssemblyName" && nestedType.Name == "_public_key_token_e__FixedBuffer") ||
+                        (Name == "ScriptableCullingParameters" && (nestedType.Name == "_m_CullingPlanes_e__FixedBuffer" || nestedType.Name == "_m_LayerFarCullDistances_e__FixedBuffer")) ||
+                        (Name == "CameraProperties" && (nestedType.Name == "_m_ShadowCullPlanes_e__FixedBuffer" || nestedType.Name == "_m_CameraCullPlanes_e__FixedBuffer" || nestedType.Name == "_layerCullDistances_e__FixedBuffer")) ||
+                        Name == "PlaybackState" ||
+                        Name == "NativeParticleData"
+                        )
+                return true;
+
+            return false;
         }
 
         public override async Task ToHeaderCode(StreamWriter sw, Int32 indent = 0)
@@ -216,10 +230,12 @@ namespace il2cpp_sdk_generator
             {
                 for (int i = 0; i < nestedTypes.Count; i++)
                 {
-                    if ((Name == "ConfiguredTaskAwaitable" && nestedTypes[i].Name == "ConfiguredTaskAwaiter") || (Name == "MonoAssemblyName" && nestedTypes[i].Name == "_public_key_token_e__FixedBuffer"))
+                    if (IsNestedWithoutForward(nestedTypes[i]))
                     {
                         string nestedCode = nestedTypes[i].ToHeaderCode(indent);
-                        nestedCode = nestedCode.Replace($"{Name}::", "");
+                        //nestedCode = nestedCode.Replace($"{GetFullName()}", "");
+                        //nestedCode = nestedCode.Replace($"{Name}::", "");
+                        nestedCode = nestedCode.Replace($"{nestedTypes[i].DeclarationString()}", $"{nestedTypes[i].Name}");
                         await sw.WriteAsync(nestedCode);
                         await sw.WriteAsync("\n");
                         continue;
@@ -325,8 +341,10 @@ namespace il2cpp_sdk_generator
             {
                 for (int i = 0; i < nestedTypes.Count; i++)
                 {
-                    if ((Name == "ConfiguredTaskAwaitable" && nestedTypes[i].Name == "ConfiguredTaskAwaiter") || (Name == "MonoAssemblyName" && nestedTypes[i].Name == "_public_key_token_e__FixedBuffer"))
+                    if (IsNestedWithoutForward(nestedTypes[i]))
                         continue;
+                    //if ((Name == "ConfiguredTaskAwaitable" && nestedTypes[i].Name == "ConfiguredTaskAwaiter") || (Name == "MonoAssemblyName" && nestedTypes[i].Name == "_public_key_token_e__FixedBuffer"))
+                    //    continue;
 
                     await nestedTypes[i].ToHeaderCode(sw, indent);
                     await sw.WriteAsync("\n");
@@ -991,7 +1009,7 @@ namespace il2cpp_sdk_generator
             code += "il2cpp::class_get_methods(il2cppClass, &iter);\n".Indent(indent + 2);
             code += "iter = NULL;\n".Indent(indent + 2);
             code += "il2cpp::class_get_fields(il2cppClass, &iter);\n".Indent(indent + 2);
-            
+
             // Methods
             for (int i = 0; i < miMethods.Count; i++)
             {
@@ -1010,7 +1028,7 @@ namespace il2cpp_sdk_generator
 
         internal override void ResolveOverrides()
         {
-            for(int i =0;i<miMethods.Count;i++)
+            for (int i = 0; i < miMethods.Count; i++)
             {
                 if (!miMethods[i].isOverride)
                     continue;

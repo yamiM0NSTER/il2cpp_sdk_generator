@@ -35,7 +35,7 @@ namespace il2cpp_sdk_generator
             stream.Position = PortableExecutable.dosHeader.e_lfanew;
             // signature can be uint16 but we want explicitly windows NT signature
             PortableExecutable.signature = reader.ReadUInt32();
-            if(PortableExecutable.signature != PE_Constants.IMAGE_NT_SIGNATURE)
+            if (PortableExecutable.signature != PE_Constants.IMAGE_NT_SIGNATURE)
             {
                 Console.WriteLine($"PortableExecutable signature not windows NT: {PortableExecutable.signature}");
                 return;
@@ -53,7 +53,7 @@ namespace il2cpp_sdk_generator
                 Console.WriteLine($"Position before imageOptionalHeader64: 0x{posBeforeimageOptionalHeader64:X8}");
                 PortableExecutable.imageOptionalHeader64 = reader.Read<IMAGE_OPTIONAL_HEADER64>();
                 PortableExecutable.imageOptionalHeader64.DumpToConsole();
-                foreach(var directory in PortableExecutable.imageOptionalHeader64.DataDirectory)
+                foreach (var directory in PortableExecutable.imageOptionalHeader64.DataDirectory)
                 {
                     Console.WriteLine($"directory start: 0x{directory.RelativeVirtualAddress:X}");
                     Console.WriteLine($"directory end: 0x{directory.RelativeVirtualAddress + directory.Size:X}");
@@ -65,14 +65,14 @@ namespace il2cpp_sdk_generator
 
             Console.WriteLine($"ImageBase: 0x{PortableExecutable.imageOptionalHeader64.ImageBase:X8}");
             PortableExecutable.imageSectionHeaders = reader.ReadArray<IMAGE_SECTION_HEADER>(PortableExecutable.imageFileHeader.NumberOfSections);
-            foreach(var section in PortableExecutable.imageSectionHeaders)
+            foreach (var section in PortableExecutable.imageSectionHeaders)
             {
                 PortableExecutable.m_mapSections.Add(System.Text.Encoding.UTF8.GetString(section.Name).TrimEnd('\0'), section);
 
                 Console.WriteLine($"Section name: {System.Text.Encoding.UTF8.GetString(section.Name)} [{System.Text.Encoding.UTF8.GetString(section.Name).TrimEnd('\0').Length}]");
                 section.DumpToConsole();
                 Console.WriteLine($"Section RVA VirtualAddress: 0x{section.VirtualAddress:X8}");
-                Console.WriteLine($"Section VirtualAddress+VirtualSize: 0x{section.VirtualAddress+section.Misc.VirtualSize:X8}");
+                Console.WriteLine($"Section VirtualAddress+VirtualSize: 0x{section.VirtualAddress + section.Misc.VirtualSize:X8}");
                 Console.WriteLine($"Section characteristics: {section.Characteristics:X4}");
 
                 //if ((section.Characteristics & PE_Constants.CHARACTERISTICS_DATA_MASK) == PE_Constants.CHARACTERISTICS_DATA_MASK)
@@ -90,7 +90,7 @@ namespace il2cpp_sdk_generator
 
             // TODO: If symbol table exists try to read what is there, maybe useful
             // COFF Symbol table
-            if(PortableExecutable.imageFileHeader.PointerToSymbolTable != 0)
+            if (PortableExecutable.imageFileHeader.PointerToSymbolTable != 0)
             {
 
             }
@@ -137,7 +137,7 @@ namespace il2cpp_sdk_generator
         const long leaInstructionSize = 7;
         const long MetadataRegistrationInstructionOffset = leaInstructionSize * 1;
         const long CodeRegistrationInstructionOffset = leaInstructionSize * 2;
-        
+
         // Works with Unity 2018 & 2019 x64 OwO
         // Works with VRChat build 976 => Unity 2018.4.20 il2cpp 24.1
         // Works with BusinessTour => Unity 2019.4.1 il2cpp 24.3
@@ -169,7 +169,7 @@ namespace il2cpp_sdk_generator
             }
             Console.WriteLine($"Candidates: {candidates.Count}");
 
-            for(int i = 0;i<candidates.Count;i++)
+            for (int i = 0; i < candidates.Count; i++)
             {
                 // Get MetadataRegistrationAddress
                 int address = BinaryPattern.GetInt32_LE(candidates[i] + MetadataRegistrationInstructionOffset + 3);
@@ -220,98 +220,98 @@ namespace il2cpp_sdk_generator
         // Works with bigscreen -> Unity 2018.4.22 il2cpp 24.1
         private ulong FindCodeRegistration()
         {
-            // PE should store indexed method pointers
-            int methodsCount = Metadata.methodDefinitions.Count(x => x.methodIndex >= 0);
+            //// PE should store indexed method pointers
+            //int methodsCount = Metadata.methodDefinitions.Count(x => x.methodIndex >= 0);
 
-            // Code Registration should be in .rdata, otherwise something changed/file was mangled
-            IMAGE_SECTION_HEADER rdataSection;
-            if (!PortableExecutable.m_mapSections.TryGetValue(".rdata", out rdataSection))
-                return 0;
+            //// Code Registration should be in .rdata, otherwise something changed/file was mangled
+            //IMAGE_SECTION_HEADER rdataSection;
+            //if (!PortableExecutable.m_mapSections.TryGetValue(".rdata", out rdataSection))
+            //    return 0;
 
-            IMAGE_SECTION_HEADER textSection;
-            PortableExecutable.m_mapSections.TryGetValue(".text", out textSection);
+            //IMAGE_SECTION_HEADER textSection;
+            //PortableExecutable.m_mapSections.TryGetValue(".text", out textSection);
 
-            IMAGE_SECTION_HEADER il2cppSection;
-            PortableExecutable.m_mapSections.TryGetValue("il2cpp", out il2cppSection);
+            //IMAGE_SECTION_HEADER il2cppSection;
+            //PortableExecutable.m_mapSections.TryGetValue("il2cpp", out il2cppSection);
 
-            long offset = rdataSection.PointerToRawData;
-            long max_offset = rdataSection.PointerToRawData + rdataSection.SizeOfRawData;
+            //long offset = rdataSection.PointerToRawData;
+            //long max_offset = rdataSection.PointerToRawData + rdataSection.SizeOfRawData;
 
-            stream.Position = offset;
-            while (stream.Position < max_offset)
-            {
-                long address = stream.Position;
-                long methodsCountCandidate = reader.ReadInt64();
-                // Read values until we find indexed methods number
-                if (methodsCountCandidate != methodsCount)
-                    continue;
+            //stream.Position = offset;
+            //while (stream.Position < max_offset)
+            //{
+            //    long address = stream.Position;
+            //    long methodsCountCandidate = reader.ReadInt64();
+            //    // Read values until we find indexed methods number
+            //    if (methodsCountCandidate != methodsCount)
+            //        continue;
 
-                // Next value should be VA(Virtual address) to array of methods
-                // should be within .rdata
-                // E0 B7 85 84 01 => 0x018485B7E0 
-                long methodTableOffset = (long)Offset.FromVA(reader.ReadUInt64());
-                Console.WriteLine($"methodTableOffset: 0x{methodTableOffset:X8}");
-                if(rdataSection != Section.ByOffset((ulong)methodTableOffset))
-                    goto KEEP_SEARCHING;
+            //    // Next value should be VA(Virtual address) to array of methods
+            //    // should be within .rdata
+            //    // E0 B7 85 84 01 => 0x018485B7E0 
+            //    long methodTableOffset = (long)Offset.FromVA(reader.ReadUInt64());
+            //    Console.WriteLine($"methodTableOffset: 0x{methodTableOffset:X8}");
+            //    if(rdataSection != Section.ByOffset((ulong)methodTableOffset))
+            //        goto KEEP_SEARCHING;
 
-                // There should be enough space till end of section to contain whole table
-                if (methodTableOffset + (long)methodsCount*sizeof(ulong) > max_offset)
-                    goto KEEP_SEARCHING;
+            //    // There should be enough space till end of section to contain whole table
+            //    if (methodTableOffset + (long)methodsCount*sizeof(ulong) > max_offset)
+            //        goto KEEP_SEARCHING;
 
-                // check unresolvedVirtualCallCount
-                // NOTE: not sure if it always matches metadata values
-                // works with vrchat build 976
-                // works with bigscreen 
-                // doesn't work with business tour due to il2cpp version mismatch => probably some changes in structures 
-                stream.Position = address + unresolvedVirtualCallCountOffset64; // unresolvedVirtualCallCount is 11th field
-                long unresolvedVirtualCallCountCandidate = reader.ReadInt64();
-                if(unresolvedVirtualCallCountCandidate != Metadata.unresolvedVirtualCallParameterTypes.Length)
-                    goto KEEP_SEARCHING;
+            //    // check unresolvedVirtualCallCount
+            //    // NOTE: not sure if it always matches metadata values
+            //    // works with vrchat build 976
+            //    // works with bigscreen 
+            //    // doesn't work with business tour due to il2cpp version mismatch => probably some changes in structures 
+            //    stream.Position = address + unresolvedVirtualCallCountOffset64; // unresolvedVirtualCallCount is 11th field
+            //    long unresolvedVirtualCallCountCandidate = reader.ReadInt64();
+            //    if(unresolvedVirtualCallCountCandidate != Metadata.unresolvedVirtualCallParameterTypes.Length)
+            //        goto KEEP_SEARCHING;
 
-                // Try to read whole structure and check pointers
-                stream.Position = address;
-                // Since we are reading it, we can cache it for later use
-                il2cpp.codeRegistration64 = reader.Read<Il2CppCodeRegistration64>();
-                if(!il2cpp.codeRegistration64.Validate())
-                    goto KEEP_SEARCHING;
+            //    // Try to read whole structure and check pointers
+            //    stream.Position = address;
+            //    // Since we are reading it, we can cache it for later use
+            //    il2cpp.codeRegistration64 = reader.Read<Il2CppCodeRegistration64>();
+            //    if(!il2cpp.codeRegistration64.Validate())
+            //        goto KEEP_SEARCHING;
 
-                Console.WriteLine($"unresolvedVirtualCallCountCandidate: {unresolvedVirtualCallCountCandidate}");
+            //    Console.WriteLine($"unresolvedVirtualCallCountCandidate: {unresolvedVirtualCallCountCandidate}");
 
-                // Sanity check all methods to be valid pointers
-                stream.Position = methodTableOffset;
-                // Read table of method VA's(Virtual addresses) and validate
-                // 60 97 55 80 01 00 00 00 => 0x0180558760
-                var methodPtrs = reader.ReadArray<ulong>(methodsCount);
-                bool bFoundFaultyPtr = false;
-                for(int i=0;i < methodsCount; i++)
-                {
-                    IMAGE_SECTION_HEADER section = Section.ByRVA(RVA.FromVA(methodPtrs[i]));
-                    // methods should be in execution sections
-                    if (il2cppSection != section && textSection != section)
-                    {
-                        Console.WriteLine($"i: {i} addr: 0x{methodPtrs[i]:X8} section: {System.Text.Encoding.UTF8.GetString(Section.ByRVA(RVA.FromVA(methodPtrs[i])).Name).TrimEnd('\0')} :Thonk:");
-                        bFoundFaultyPtr = true;
-                        break;
-                    }
-                }
+            //    // Sanity check all methods to be valid pointers
+            //    stream.Position = methodTableOffset;
+            //    // Read table of method VA's(Virtual addresses) and validate
+            //    // 60 97 55 80 01 00 00 00 => 0x0180558760
+            //    var methodPtrs = reader.ReadArray<ulong>(methodsCount);
+            //    bool bFoundFaultyPtr = false;
+            //    for(int i=0;i < methodsCount; i++)
+            //    {
+            //        IMAGE_SECTION_HEADER section = Section.ByRVA(RVA.FromVA(methodPtrs[i]));
+            //        // methods should be in execution sections
+            //        if (il2cppSection != section && textSection != section)
+            //        {
+            //            Console.WriteLine($"i: {i} addr: 0x{methodPtrs[i]:X8} section: {System.Text.Encoding.UTF8.GetString(Section.ByRVA(RVA.FromVA(methodPtrs[i])).Name).TrimEnd('\0')} :Thonk:");
+            //            bFoundFaultyPtr = true;
+            //            break;
+            //        }
+            //    }
 
-                if(bFoundFaultyPtr)
-                    goto KEEP_SEARCHING;
+            //    if(bFoundFaultyPtr)
+            //        goto KEEP_SEARCHING;
 
-                return VA.FromOffset((ulong)address);
+            //    return VA.FromOffset((ulong)address);
 
-                KEEP_SEARCHING:
-                // move back position + size of checked value
-                stream.Position = address + sizeof(long);
-                continue;
-            }
+            //    KEEP_SEARCHING:
+            //    // move back position + size of checked value
+            //    stream.Position = address + sizeof(long);
+            //    continue;
+            //}
 
-            // If not found ensure it's set to null
-            il2cpp.codeRegistration64 = null;
+            //// If not found ensure it's set to null
+            //il2cpp.codeRegistration64 = null;
 
             return 0;
         }
-        
+
         const long fieldOffsetsCountOffset64 = 10L * 8L; // fieldOffsetsCount is 11th field
         /// <summary>
         ///  FindMetadataRegistration
@@ -360,7 +360,7 @@ namespace il2cpp_sdk_generator
                 stream.Position = address - fieldOffsetsCountOffset64; // fieldOffsetsCount is 11th field
                 // Since we are reading it, we can cache it for later use
                 il2cpp.metadataRegistration64 = reader.Read<Il2CppMetadataRegistration64>();
-                if(!il2cpp.metadataRegistration64.Validate())
+                if (!il2cpp.metadataRegistration64.Validate())
                     goto KEEP_SEARCHING;
 
                 // TODO: sanity check if pointer arrays are valid?
@@ -378,18 +378,18 @@ namespace il2cpp_sdk_generator
 
             return 0;
         }
-        
+
 
         public void ReadExportDirectory()
         {
-            if(PortableExecutable.imageOptionalHeader64.NumberOfRvaAndSizes < PE_Constants.IMAGE_DIRECTORY_ENTRY_EXPORT+1)
+            if (PortableExecutable.imageOptionalHeader64.NumberOfRvaAndSizes < PE_Constants.IMAGE_DIRECTORY_ENTRY_EXPORT + 1)
             {
                 Console.WriteLine($"Export Directory over declared entries!");
                 return;
             }
-            
+
             IMAGE_DATA_DIRECTORY dataDirectory = PortableExecutable.imageOptionalHeader64.DataDirectory[PE_Constants.IMAGE_DIRECTORY_ENTRY_EXPORT];
-            if(dataDirectory.RelativeVirtualAddress == 0)
+            if (dataDirectory.RelativeVirtualAddress == 0)
             {
                 Console.WriteLine($"Export Directory is empty.");
                 return;
@@ -405,23 +405,23 @@ namespace il2cpp_sdk_generator
             // TODO: Read string till null function
             Console.WriteLine($"exportDirectoryTable name from RVA: {reader.ReadNullTerminatedString()}");
 
-            if(exportDirectoryTable.AddressTableEntries != exportDirectoryTable.NumberofNamePointers)
+            if (exportDirectoryTable.AddressTableEntries != exportDirectoryTable.NumberofNamePointers)
             {
                 // Skip if number of functions doesn't equal nuumber of names until ordinal table is prepared.
                 return;
             }
 
             // Read Export Address Table
-            if(exportDirectoryTable.ExportAddressTableRVA > 0)
+            if (exportDirectoryTable.ExportAddressTableRVA > 0)
             {
                 stream.Position = (long)Offset.FromRVA(exportDirectoryTable.ExportAddressTableRVA);
                 EXPORT_ADDRESS_TABLE_ENTRY[] exportAddressTableEntries = reader.ReadArray<EXPORT_ADDRESS_TABLE_ENTRY>((int)exportDirectoryTable.AddressTableEntries);
-                for (int i=0;i<exportDirectoryTable.AddressTableEntries;i++)
+                for (int i = 0; i < exportDirectoryTable.AddressTableEntries; i++)
                 {
                     var section = Section.ByRVA(exportAddressTableEntries[i].ExportRVA);
                     var section_name = System.Text.Encoding.UTF8.GetString(section.Name);
                     // Exports are external
-                    if(!section_name.StartsWith(".text"))
+                    if (!section_name.StartsWith(".text"))
                     {
                         exportAddressTableEntries[i].DumpToConsole();
                         Console.WriteLine($"Section name: {section_name}");
@@ -439,13 +439,13 @@ namespace il2cpp_sdk_generator
                 EXPORT_NAME_TABLE_ENTRY[] exportNameTableEntries = reader.ReadArray<EXPORT_NAME_TABLE_ENTRY>((int)exportDirectoryTable.NumberofNamePointers);
                 for (int i = 0; i < exportDirectoryTable.NumberofNamePointers; i++)
                 {
-                    
+
                     var section = Section.ByRVA(exportNameTableEntries[i].NameRVA);
                     var section_name = System.Text.Encoding.UTF8.GetString(section.Name);
                     //exportNameTableEntries[i].DumpToConsole();
                     stream.Position = (long)Offset.FromRVA(exportNameTableEntries[i].NameRVA);
                     //reader.ReadString();
-                    
+
                     //Byte[] ExportName = reader.ReadArray<Byte>(17);
                     Console.WriteLine($"Export name from RVA: {reader.ReadNullTerminatedString()}");
                     //Console.WriteLine($"Section name: {section_name}");
@@ -479,7 +479,7 @@ namespace il2cpp_sdk_generator
             stream.Position = (long)Offset.FromRVA(dataDirectory.RelativeVirtualAddress);
 
             IMPORT_DIRECTORY_TABLE_ENTRY[] importDirectoryTables = reader.ReadArray<IMPORT_DIRECTORY_TABLE_ENTRY>((int)dataDirectory.Size / typeof(IMPORT_DIRECTORY_TABLE_ENTRY).GetSizeOf());
-            foreach(var importDirectoryTable in importDirectoryTables)
+            foreach (var importDirectoryTable in importDirectoryTables)
             {
                 //importDirectoryTable.DumpToConsole();
                 if (importDirectoryTable.ImportLookupTableRVA == 0)
@@ -500,7 +500,7 @@ namespace il2cpp_sdk_generator
                 PortableExecutable.importLookupTableEntries = importLookupTableList.ToArray();
                 PortableExecutable.hintNameTableEntries = new HINT_NAME_TABLE_ENTRY[PortableExecutable.importLookupTableEntries.Length];
 
-                for(int i =0; i<PortableExecutable.importLookupTableEntries.Length;i++)
+                for (int i = 0; i < PortableExecutable.importLookupTableEntries.Length; i++)
                 {
                     if (!PortableExecutable.importLookupTableEntries[i].ImportByOrdinal)
                     {
@@ -537,7 +537,7 @@ namespace il2cpp_sdk_generator
 
             PortableExecutable.runtimeFunctions = reader.ReadArray<RUNTIME_FUNCTION>((int)dataDirectory.Size / typeof(RUNTIME_FUNCTION).GetSizeOf());
             Console.WriteLine($"PortableExecutable.runtimeFunctions[{PortableExecutable.runtimeFunctions.Length}]");
-            for(int i = 0;i< PortableExecutable.runtimeFunctions.Length;i++)
+            for (int i = 0; i < PortableExecutable.runtimeFunctions.Length; i++)
             {
                 PortableExecutable.m_mapRuntimeFunctionPtrs.Add(VA.FromRVA(PortableExecutable.runtimeFunctions[i].BeginAddress), PortableExecutable.runtimeFunctions[i]);
             }

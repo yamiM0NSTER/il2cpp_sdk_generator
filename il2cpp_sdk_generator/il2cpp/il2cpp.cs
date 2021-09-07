@@ -18,6 +18,10 @@ namespace il2cpp_sdk_generator
         public static ulong[] unresolvedVirtualCallPointers; // VA's
         public static Il2CppInteropData[] interopData; // Il2CppInteropData
         public static ulong[] windowsRuntimeFactoryTable; // VA's
+        public static ulong[] pCodeGenModules; // VA's
+        public static Il2CppCodeGenModule[] CodeGenModules; // VA's
+        public static Dictionary<string, ResolvedModule> resolvedModules = new Dictionary<string, ResolvedModule>();
+
 
         // Metadata Registration
         public static ulong MetadataRegistrationAddress;
@@ -43,7 +47,7 @@ namespace il2cpp_sdk_generator
         public static Dictionary<ulong, Il2CppGenericInst> mapGenericInstsByPtrs = new Dictionary<ulong, Il2CppGenericInst>();
 
         public static Dictionary<ulong, Resolvedil2CppGenericClass> mapResolvedGenericClassesByPtrs = new Dictionary<ulong, Resolvedil2CppGenericClass>();
-        
+
 
         public static Dictionary<ulong, ulong> mapMethodPtrsByMetadataUsages = new Dictionary<ulong, ulong>(); // VA, VA
         public static Dictionary<ulong, UInt32> mapStringLiteralPtrsByMetadataUsages = new Dictionary<ulong, UInt32>(); // VA, UInt32

@@ -17,7 +17,7 @@ namespace il2cpp_sdk_generator
 
             OutPutil2cppDefines();
 
-            for (int i =0;i<Metadata.resolvedImages.Count;i++)
+            for (int i = 0; i < Metadata.resolvedImages.Count; i++)
             {
                 Directory.SetCurrentDirectory(outputDirectory);
                 Metadata.resolvedImages[i].Output();
@@ -28,11 +28,11 @@ namespace il2cpp_sdk_generator
                 // Wait for all jobs to finish
                 Task.WaitAll(ResolvedNamespace.jobs.ToArray());
             }
-            catch(AggregateException ex)
+            catch (AggregateException ex)
             {
 
             }
-            
+
         }
 
 
@@ -47,10 +47,10 @@ namespace il2cpp_sdk_generator
             // Set .exe location
             Directory.SetCurrentDirectory(AppDomain.CurrentDomain.BaseDirectory);
             // Check if Output Folder exists & delete. Has to be recursive or else exception is thrown zzzz
-            if (Directory.Exists(OUTPUT_PATH))
-                Directory.Delete(OUTPUT_PATH, true);
+            if (Directory.Exists($"{AppDomain.CurrentDomain.BaseDirectory}\\{OUTPUT_PATH}"))
+                Directory.Delete($"{AppDomain.CurrentDomain.BaseDirectory}\\{OUTPUT_PATH}", true);
             // Create Output Folder for content
-            Directory.CreateDirectory(OUTPUT_PATH);
+            Directory.CreateDirectory($"{AppDomain.CurrentDomain.BaseDirectory}\\{OUTPUT_PATH}");
             // Set operating location for output
             Directory.SetCurrentDirectory($"{AppDomain.CurrentDomain.BaseDirectory}\\{OUTPUT_PATH}");
         }
@@ -62,7 +62,7 @@ namespace il2cpp_sdk_generator
 
             headerCode += $"#define GAMEASSEMBLY_FILE_SIZE {BinaryPattern.m_assemblySize}\n";
             headerCode += $"#define METADATA_FILE_SIZE {MetadataReader.stream.Length}\n";
-            
+
             headerCode += $"#define CODE_REGISTRATION_RVA 0x{RVA.FromVA(il2cpp.CodeRegistrationAddress):X}\n";
             headerCode += $"#define METADATA_REGISTRATION_RVA 0x{RVA.FromVA(il2cpp.MetadataRegistrationAddress):X}\n";
 

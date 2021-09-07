@@ -9,6 +9,7 @@ namespace il2cpp_sdk_generator
 {
     public class ResolvedType : ResolvedObject
     {
+        public ResolvedImage resolvedImage = null;
         protected bool isResolved = false;
         public Int32 typeDefinitionIndex;
         public Il2CppTypeDefinition typeDef = null;
@@ -52,7 +53,7 @@ namespace il2cpp_sdk_generator
         }
 
         public virtual string ToHeaderCode(Int32 indent = 0)
-        {   
+        {
             return $"{this.GetType().Name}::ToHeaderCode";
         }
 
@@ -85,7 +86,7 @@ namespace il2cpp_sdk_generator
 
         internal virtual void ResolveOverrides()
         {
-            
+
         }
 
         public virtual string DemangledPrefix()
@@ -93,7 +94,7 @@ namespace il2cpp_sdk_generator
             string prefix = GetVisibility();
 
             UInt32 staticFlags = typeDef.flags & il2cpp_Constants.TYPE_ATTRIBUTE_STATIC;
-            switch(staticFlags)
+            switch (staticFlags)
             {
                 case il2cpp_Constants.TYPE_ATTRIBUTE_STATIC:
                     prefix += "Static";
@@ -158,7 +159,7 @@ namespace il2cpp_sdk_generator
         {
             Dictionary<string, Int32> demangledPrefixes = new Dictionary<string, Int32>();
 
-            for(int i =0;i< nestedTypes.Count;i++)
+            for (int i = 0; i < nestedTypes.Count; i++)
             {
                 ResolvedType resolvedType = nestedTypes[i];
                 resolvedType.DemangleNestedTypeNames();
@@ -172,7 +173,7 @@ namespace il2cpp_sdk_generator
                 }
 
                 string demangledPrefix = resolvedType.DemangledPrefix();
-                if(!demangledPrefixes.TryGetValue(demangledPrefix, out var idx))
+                if (!demangledPrefixes.TryGetValue(demangledPrefix, out var idx))
                 {
                     idx = 0;
                     demangledPrefixes.Add(demangledPrefix, idx);
@@ -220,7 +221,7 @@ namespace il2cpp_sdk_generator
             else
             {
                 str = CppNamespace();
-                if(str != "")
+                if (str != "")
                     str += "::";
             }
 

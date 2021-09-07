@@ -35,7 +35,7 @@ namespace il2cpp_sdk_generator
             Console.WriteLine($"peBytes: {peBytes.Length}");
             BinaryPattern.SetAssemblyData(peBytes);
             MemoryStream memStream = new MemoryStream(peBytes);
-            
+
             PortableExecutableReader peReader = new PortableExecutableReader(memStream);
             peReader.Read();
             peReader.Process();
@@ -49,6 +49,7 @@ namespace il2cpp_sdk_generator
 
             Demangler.Demangle();
 
+            Console.WriteLine("Applying rules");
             // Rules
             Rules.Apply();
 
@@ -58,6 +59,7 @@ namespace il2cpp_sdk_generator
             Console.WriteLine("Rules done");
             Console.ReadLine();
 
+            Console.WriteLine("Outputting files");
             CppOutput.Output();
 
             Console.WriteLine("Finito");
@@ -87,7 +89,7 @@ namespace il2cpp_sdk_generator
                     return true;
                 }
             }
-            else if(Path.GetExtension(AssemblyPath) == ".dll")
+            else if (Path.GetExtension(AssemblyPath) == ".dll")
             {
                 string assemblyDir = Path.GetDirectoryName(AssemblyPath);
                 string potentialMetadataPath = $"{assemblyDir}\\global-metadata.dat";
