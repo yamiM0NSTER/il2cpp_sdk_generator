@@ -87,10 +87,17 @@
     <Compile Include="ResolvedObjects\ResolvedProperty.cs" />
     <Compile Include="ResolvedObjects\ResolvedStruct.cs" />
     <Compile Include="ResolvedObjects\ResolvedType.cs" />
+    <Compile Include="Rules\Attributes\MethodName.cs" />
+    <Compile Include="Rules\Attributes\RuleApplyAfter.cs" />
+    <Compile Include="Rules\Attributes\RuleResolveAfter.cs" />
     <Compile Include="Rules\IRule.cs" />
+    <Compile Include="Rules\Attributes\MethodResolveOrderAttribute.cs" />
     <Compile Include="Rules\RuleBase.cs" />
+    <Compile Include="Rules\RuleBaseClass.cs" />
     <Compile Include="Rules\Rules.cs" />
+    <Compile Include="Rules\RulesManager.cs" />
     <Compile Include="Simplify\TypeBlacklist.cs" />
+    <Compile Include="TestClass.cs" />
     <Compile Include="Utils\ArrayBuilder.cs" />
     <Compile Include="Utils\BinaryPattern.cs" />
     <Compile Include="Utils\Offsets.cs" />
@@ -99,4 +106,9 @@
     <None Include="app.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PreBuildEvent>cd $(TargetDir)
+del Vrchat.Rules.dll
+del Vrchat.Rules.pdb</PreBuildEvent>
+  </PropertyGroup>
 </Project>

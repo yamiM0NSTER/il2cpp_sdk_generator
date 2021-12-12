@@ -4,15 +4,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace il2cpp_sdk_generator
-{
-    class TypeBlacklist
-    {
-        static bool isActive = true;
-        static bool isActiveForMangled = true;
+namespace il2cpp_sdk_generator {
+  class TypeBlacklist {
+    static bool isActive = true;
+    static bool isActiveForMangled = true;
 
-        static string[] blacklist =
-        {
+    static string[] blacklist =
+    {
             "VRCWorldPlayerUiProfile",
             "VRC::UserCamera::UserCameraIndicator",
             "EmojiGenerator",
@@ -79,7 +77,6 @@ namespace il2cpp_sdk_generator
             "VRC::SDK3::Avatars::ScriptableObjects::VRCExpressionsMenu::Control",
             "VRC::SDK3::Avatars::ScriptableObjects::VRCExpressionsMenu::Control::Parameter",
             "VRC::SDKBase::VRC_PortalMarker",
-            "TMPro::TextMeshPro",
             "PortalPlatformIcons",
             "UnityEngine::Playables::PlayableDirector",
             "VRC::Core::ApiModelContainer_1",
@@ -185,7 +182,6 @@ namespace il2cpp_sdk_generator
             "OVRLipSyncContextPlayableParam",
             "PlayerNameplate",
             "BestHTTP::Forms::HTTPFormBase",
-            "TMPro::TextMeshProUGUI",
             "AvatarLoadingBar",
             "PopupAddToAvatarFavoritesGroup",
             "SimpleAudioGain",
@@ -200,23 +196,25 @@ namespace il2cpp_sdk_generator
             "Cysharp::Threading::Tasks::UniTask::Awaiter",
             "Cysharp::Threading::Tasks::YieldAwaitable::Awaiter",
             "Cysharp::Threading::Tasks::UnityAsyncExtensions::ResourceRequestAwaiter",
+            "Cysharp::Threading::Tasks::UniTaskCompletionSource_1",
             "System::Collections::Immutable::ImmutableHashSet_1",
             "UnityEngine::LowLevel::PlayerLoopSystem",
-            "TMPro::TMP_Text"
+            "InternalStaticClass12::SerializableContainer",
+            "VRC::SDKBase::VRC_DataStorage::VrcDataElement",
+            "DG::Tweening::Sequence",
         };
 
-        public static bool isBlacklisted(string type, bool isMangled)
-        {
-            if (!isActive)
-                return false;
+    public static bool isBlacklisted(string type, bool isMangled) {
+      if (!isActive)
+        return false;
 
-            if (isActiveForMangled && isMangled)
-                return true;
+      if (isActiveForMangled && isMangled)
+        return true;
 
-            if (blacklist.Contains(type))
-                return true;
+      if (blacklist.Contains(type))
+        return true;
 
-            return false;
-        }
+      return false;
     }
+  }
 }

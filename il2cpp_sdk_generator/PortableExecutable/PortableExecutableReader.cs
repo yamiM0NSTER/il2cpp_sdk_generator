@@ -574,7 +574,7 @@ namespace il2cpp_sdk_generator
                 }
                 else
                 {
-                    CodeScanner.funcPtrs.Add(VA.FromRVA(entry.BeginAddress));
+                    //CodeScanner.funcPtrs.Add(VA.FromRVA(entry.BeginAddress));
                 }
             }
         }
